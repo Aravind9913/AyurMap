@@ -12,7 +12,8 @@
     "@clerk/clerk-react": "^5.53.3",
     "leaflet": "^1.9.4",
     "react-leaflet": "^5.0.0",
-    "react-markdown": "^10.1.0"
+    "react-markdown": "^10.1.0",
+    "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
     "@radix-ui/react-dialog": "^1.1.14",

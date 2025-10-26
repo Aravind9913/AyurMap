@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { usePlants, useRecognizePlant, useSavePlant, useDeletePlant, useProcessedPlantsForMap } from "@/hooks/usePlants";
+import ChatContainer from "@/components/ChatContainer";
 
 // AuthenticatedImage component that adds auth token to image requests
 function AuthenticatedImage({ plantId, alt, className }: { plantId: string; alt: string; className?: string }) {
@@ -117,7 +118,7 @@ export default function Farmer() {
     }
   }, [isSignedIn, navigate]);
 
-  const [activeView, setActiveView] = useState<'add-new' | 'gallery' | 'map'>('add-new');
+  const [activeView, setActiveView] = useState<'add-new' | 'gallery' | 'map' | 'chats'>('add-new');
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [recognizing, setRecognizing] = useState(false);
@@ -236,6 +237,16 @@ export default function Farmer() {
               <span className="text-lg">🗺️</span>
               <span className="text-sm font-medium">Map</span>
             </button>
+            <button
+              onClick={() => setActiveView('chats')}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition ${activeView === 'chats'
+                ? 'bg-gray-100 text-gray-900'
+                : 'text-gray-600 hover:bg-gray-50'
+                }`}
+            >
+              <span className="text-lg">💬</span>
+              <span className="text-sm font-medium">Chats</span>
+            </button>
           </div>
           <div className="mt-8 pt-6 border-t border-gray-200">
             <div className="flex items-center gap-3 mb-3">
@@ -263,14 +274,16 @@ export default function Farmer() {
         <main className="flex-1 p-8">
           <div className="mb-6">
             <h1 className="text-2xl font-semibold text-gray-900">
-              {activeView === 'add-new' ? 'Add New Plant' : activeView === 'map' ? 'Map View' : 'My Plants'}
+              {activeView === 'add-new' ? 'Add New Plant' : activeView === 'map' ? 'Map View' : activeView === 'chats' ? 'Chats' : 'My Plants'}
             </h1>
             <p className="text-gray-500 text-sm mt-1">
               {activeView === 'add-new'
                 ? 'Upload an image to identify and add a new plant'
                 : activeView === 'map'
                   ? 'View your plants on an interactive map'
-                  : `${myPlants.length} ${myPlants.length === 1 ? 'plant' : 'plants'} in your collection`
+                  : activeView === 'chats'
+                    ? 'Chat with consumers about your plants'
+                    : `${myPlants.length} ${myPlants.length === 1 ? 'plant' : 'plants'} in your collection`
               }
             </p>
           </div>
@@ -294,6 +307,10 @@ export default function Farmer() {
               loadingPlants={loadingPlants}
               setSelectedPlant={setSelectedPlant}
             />
+          ) : activeView === 'chats' ? (
+            <div className="h-[calc(100vh-200px)]">
+              <ChatContainer role="farmer" />
+            </div>
           ) : (
             <MyPlantsGallery
               myPlants={myPlants}
@@ -1356,8 +1373,8 @@ function PlantMapView({ myPlants, loadingPlants, setSelectedPlant }: any) {
         });
 
         // Open popup on hover (with delay to prevent flickering)
-        let hoverTimeout: NodeJS.Timeout;
-        let popupTimeout: NodeJS.Timeout;
+        let hoverTimeout: ReturnType<typeof setTimeout>;
+        let popupTimeout: ReturnType<typeof setTimeout>;
 
         marker.on('mouseover', () => {
           clearTimeout(hoverTimeout);

@@ -25,6 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import ChatContainer from "@/components/ChatContainer";
 
 interface User {
   _id: string;
@@ -567,79 +568,8 @@ export default function Admin() {
         )}
 
         {activeTab === "chats" && (
-          <div className="space-y-4">
-            <div className="bg-card border rounded-lg overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-muted">
-                  <tr>
-                    <th className="p-3 text-left text-sm font-medium">Plant</th>
-                    <th className="p-3 text-left text-sm font-medium">Participants</th>
-                    <th className="p-3 text-left text-sm font-medium">Last Message</th>
-                    <th className="p-3 text-left text-sm font-medium">Status</th>
-                    <th className="p-3 text-left text-sm font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {chats.map((c) => (
-                    <tr key={c._id} className="border-t">
-                      <td className="p-3">{c.plantName}</td>
-                      <td className="p-3">
-                        <div className="text-sm">
-                          <div>{c.farmerEmail}</div>
-                          <div className="text-muted-foreground">{c.userEmail}</div>
-                        </div>
-                      </td>
-                      <td className="p-3 text-sm text-muted-foreground">
-                        {new Date(c.lastMessageAt).toLocaleDateString()}
-                      </td>
-                      <td className="p-3">
-                        {c.isReported ? (
-                          <span className="text-destructive">Reported</span>
-                        ) : (
-                          <span className="text-green-600">Active</span>
-                        )}
-                      </td>
-                      <td className="p-3">
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDeleteChat(c._id)}
-                        >
-                          Delete
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {/* Pagination */}
-              {pagination?.chats && (
-                <div className="flex justify-between items-center p-4 border-t">
-                  <div className="text-sm text-muted-foreground">
-                    Page {pagination.chats.currentPage} of {pagination.chats.totalPages}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={!pagination.chats.hasPrev}
-                      onClick={() => setCurrentPage({ ...currentPage, chats: currentPage.chats - 1 })}
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={!pagination.chats.hasNext}
-                      onClick={() => setCurrentPage({ ...currentPage, chats: currentPage.chats + 1 })}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
+          <div className="h-[calc(100vh-250px)]">
+            <ChatContainer role="admin" />
           </div>
         )}
 
