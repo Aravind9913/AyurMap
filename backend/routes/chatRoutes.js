@@ -453,6 +453,7 @@ router.post('/:chatId/typing',
         await Chat.findByIdAndUpdate(chatId, {
           typing: true,
           typingBy: req.user._id,
+          typingByEmail: req.user.email,
           typingAt: new Date()
         });
       } else {
@@ -460,6 +461,7 @@ router.post('/:chatId/typing',
         await Chat.findByIdAndUpdate(chatId, {
           typing: false,
           typingBy: null,
+          typingByEmail: null,
           typingAt: null
         });
       }
