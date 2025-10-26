@@ -132,8 +132,8 @@ export default function Index() {
         {gradients}
         <main className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6">
           <div className="flex flex-col items-center gap-4">
-            <div className="h-12 w-12 animate-spin rounded-full border-4 border-emerald-600 border-t-transparent"></div>
-            <p className="text-emerald-900/70 font-medium">Loading...</p>
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+            <p className="text-foreground/70 font-medium">Loading...</p>
           </div>
         </main>
       </div>
@@ -141,28 +141,28 @@ export default function Index() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-neutral-light">
       <main className="flex min-h-screen flex-col items-center justify-center px-6">
         <div className="mx-auto max-w-md w-full">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-semibold tracking-tight text-gray-900 mb-2">
+            <h1 className="text-4xl font-semibold tracking-tight text-foreground mb-2">
               AyurMap
             </h1>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               Ayurvedic plants at your fingertips
             </p>
           </div>
 
           <Button
             size="lg"
-            className="w-full h-12 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium transition-colors"
+            className="w-full h-12 rounded-lg bg-primary hover:bg-primary/90 text-white font-medium transition-colors"
             onClick={() => setOpenRoleModal(true)}
           >
             Get Started
           </Button>
         </div>
 
-        <footer className="absolute bottom-6 left-0 right-0 text-center text-xs text-gray-500">
+        <footer className="absolute bottom-6 left-0 right-0 text-center text-xs text-muted-foreground">
           © AyurMap
         </footer>
       </main>
@@ -170,25 +170,25 @@ export default function Index() {
       <Dialog open={openRoleModal} onOpenChange={setOpenRoleModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-lg font-medium text-gray-900">Choose your role</DialogTitle>
+            <DialogTitle className="text-lg font-medium text-foreground">Choose your role</DialogTitle>
           </DialogHeader>
           {!showAuth ? (
             <div className="space-y-2">
               <button
                 onClick={() => handleSelectRole("Farmer")}
-                className="w-full rounded-lg border border-gray-200 bg-white p-4 text-left hover:bg-gray-50 transition"
+                className="w-full rounded-lg border border-border bg-card p-4 text-left hover:bg-secondary transition"
               >
                 <div className="text-2xl mb-2">🌿</div>
-                <div className="font-medium text-gray-900">Farmer</div>
-                <div className="text-xs text-gray-500 mt-1">Upload & manage plants</div>
+                <div className="font-medium text-foreground">Farmer</div>
+                <div className="text-xs text-muted-foreground mt-1">Upload & manage plants</div>
               </button>
               <button
                 onClick={() => handleSelectRole("Consumer")}
-                className="w-full rounded-lg border border-gray-200 bg-white p-4 text-left hover:bg-gray-50 transition"
+                className="w-full rounded-lg border border-border bg-card p-4 text-left hover:bg-secondary transition"
               >
                 <div className="text-2xl mb-2">🌼</div>
-                <div className="font-medium text-gray-900">Consumer</div>
-                <div className="text-xs text-gray-500 mt-1">Explore plants near you</div>
+                <div className="font-medium text-foreground">Consumer</div>
+                <div className="text-xs text-muted-foreground mt-1">Explore plants near you</div>
               </button>
             </div>
           ) : (
@@ -197,16 +197,16 @@ export default function Index() {
                 routing="virtual"
                 appearance={{
                   variables: {
-                    colorPrimary: "#059669",
-                    colorText: "#1f2937",
+                    colorPrimary: "#2F6B3D",
+                    colorText: "#1E1E1E",
                     colorInputBackground: "#ffffff",
                   },
                   elements: {
-                    card: "shadow-none border border-gray-200",
-                    headerTitle: "text-gray-900 font-medium",
-                    headerSubtitle: "text-gray-500 text-sm",
-                    formButtonPrimary: "bg-emerald-600 hover:bg-emerald-700",
-                    socialButtonsBlockButton: "border border-gray-200 hover:bg-gray-50",
+                    card: "shadow-none border border-border",
+                    headerTitle: "text-foreground font-medium",
+                    headerSubtitle: "text-muted-foreground text-sm",
+                    formButtonPrimary: "bg-primary hover:bg-primary/90",
+                    socialButtonsBlockButton: "border border-border hover:bg-secondary",
                   },
                 }}
               />

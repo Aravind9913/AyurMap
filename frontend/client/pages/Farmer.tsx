@@ -309,10 +309,10 @@ export default function Farmer() {
         <Dialog open={!!selectedPlant} onOpenChange={() => setSelectedPlant(null)}>
           <DialogContent className="max-w-[95vw] w-[95vw] h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-emerald-900">
+              <DialogTitle className="text-2xl font-bold text-foreground">
                 {selectedPlant.naturalName}
               </DialogTitle>
-              <p className="text-emerald-700 italic">{selectedPlant.scientificName}</p>
+              <p className="text-muted-foreground italic">{selectedPlant.scientificName}</p>
             </DialogHeader>
 
             <div className="flex gap-4">
@@ -338,10 +338,10 @@ export default function Farmer() {
               <div className="flex-1 space-y-4">
                 {selectedPlant.commonNames && selectedPlant.commonNames.length > 0 && (
                   <div>
-                    <h4 className="font-semibold text-emerald-800 mb-2">Common Names</h4>
+                    <h4 className="font-semibold text-foreground mb-2">Common Names</h4>
                     <div className="flex flex-wrap gap-2">
                       {selectedPlant.commonNames.map((name: string, idx: number) => (
-                        <span key={idx} className="px-3 py-1 bg-emerald-50 text-emerald-800 rounded-full text-sm">
+                        <span key={idx} className="px-3 py-1 bg-secondary text-foreground rounded-full text-sm">
                           {name}
                         </span>
                       ))}
@@ -351,14 +351,14 @@ export default function Farmer() {
 
                 {selectedPlant.ayurvedicDescription && (
                   <div>
-                    <h4 className="font-semibold text-emerald-800 mb-2">Description</h4>
-                    <p className="text-sm text-emerald-900">{selectedPlant.ayurvedicDescription}</p>
+                    <h4 className="font-semibold text-foreground mb-2">Description</h4>
+                    <p className="text-sm text-foreground">{selectedPlant.ayurvedicDescription}</p>
                   </div>
                 )}
 
                 {selectedPlant.medicinalBenefits && (
                   <div className="p-4 bg-purple-50 rounded-lg">
-                    <h4 className="font-semibold text-emerald-800 mb-2">Medicinal Benefits</h4>
+                    <h4 className="font-semibold text-foreground mb-2">Medicinal Benefits</h4>
                     <div className="prose prose-sm max-w-none">
                       <ReactMarkdown>{selectedPlant.medicinalBenefits}</ReactMarkdown>
                     </div>
@@ -366,19 +366,19 @@ export default function Farmer() {
                 )}
 
                 {selectedPlant.taxonomy && Object.keys(selectedPlant.taxonomy).length > 0 && (
-                  <div className="p-4 bg-emerald-50 rounded-lg">
-                    <h4 className="font-semibold text-emerald-800 mb-2">Taxonomy</h4>
+                  <div className="p-4 bg-secondary rounded-lg">
+                    <h4 className="font-semibold text-foreground mb-2">Taxonomy</h4>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       {selectedPlant.taxonomy.family && (
                         <div className="flex justify-between">
-                          <span className="text-emerald-700">Family:</span>
-                          <span className="text-emerald-900 font-medium">{selectedPlant.taxonomy.family}</span>
+                          <span className="text-muted-foreground">Family:</span>
+                          <span className="text-foreground font-medium">{selectedPlant.taxonomy.family}</span>
                         </div>
                       )}
                       {selectedPlant.taxonomy.genus && (
                         <div className="flex justify-between">
-                          <span className="text-emerald-700">Genus:</span>
-                          <span className="text-emerald-900 font-medium">{selectedPlant.taxonomy.genus}</span>
+                          <span className="text-muted-foreground">Genus:</span>
+                          <span className="text-foreground font-medium">{selectedPlant.taxonomy.genus}</span>
                         </div>
                       )}
                     </div>
@@ -387,7 +387,7 @@ export default function Farmer() {
 
                 {selectedPlant.similarImages && selectedPlant.similarImages.length > 0 && (
                   <div>
-                    <h4 className="font-semibold text-emerald-800 mb-3">Similar Images</h4>
+                    <h4 className="font-semibold text-foreground mb-3">Similar Images</h4>
                     <div className="grid grid-cols-3 gap-2">
                       {selectedPlant.similarImages.map((img: any, idx: number) => (
                         <a
@@ -426,7 +426,7 @@ export default function Farmer() {
                         href={`https://www.gbif.org/species/${selectedPlant.gbifId}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3 py-1 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition text-xs font-medium"
+                        className="px-3 py-1 bg-success/20 text-success rounded-lg hover:bg-success/30 transition text-xs font-medium"
                       >
                         🔬 GBIF
                       </a>
@@ -516,9 +516,9 @@ function AddNewPlantView({
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl p-8 shadow-lg">
-        <h2 className="text-2xl font-bold text-emerald-900 mb-4">Upload Plant Image</h2>
+        <h2 className="text-2xl font-bold text-foreground mb-4">Upload Plant Image</h2>
 
-        <div className="border-2 border-dashed border-emerald-300 rounded-xl p-12 text-center hover:border-emerald-400 transition-colors bg-emerald-50/30">
+        <div className="border-2 border-dashed border-primary/30 rounded-xl p-12 text-center hover:border-emerald-400 transition-colors bg-secondary/30">
           {preview ? (
             <div className="space-y-4">
               <img
@@ -536,7 +536,7 @@ function AddNewPlantView({
           ) : (
             <div className="space-y-4">
               <div className="text-6xl">🌱</div>
-              <div className="text-emerald-700 font-medium">Drop your plant image here or click to browse</div>
+              <div className="text-muted-foreground font-medium">Drop your plant image here or click to browse</div>
               <input
                 type="file"
                 accept="image/*"
@@ -548,9 +548,9 @@ function AddNewPlantView({
         </div>
 
         {recognizing && (
-          <div className="mt-4 flex items-center justify-center gap-3 p-4 bg-emerald-50 rounded-lg">
-            <div className="h-6 w-6 rounded-full border-4 border-emerald-300 border-t-emerald-600 animate-spin"></div>
-            <span className="text-emerald-800 font-medium">Recognizing plant...</span>
+          <div className="mt-4 flex items-center justify-center gap-3 p-4 bg-secondary rounded-lg">
+            <div className="h-6 w-6 rounded-full border-4 border-primary/30 border-t-emerald-600 animate-spin"></div>
+            <span className="text-foreground font-medium">Recognizing plant...</span>
           </div>
         )}
 
@@ -564,7 +564,7 @@ function AddNewPlantView({
       {!recognizing && plantData && plantData.name && (
         <div className="bg-white rounded-2xl p-8 shadow-lg animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-2xl font-bold text-emerald-900 flex items-center gap-3">
+            <h3 className="text-2xl font-bold text-foreground flex items-center gap-3">
               <span>📋</span> Plant Details
             </h3>
             <button
@@ -579,12 +579,12 @@ function AddNewPlantView({
             </button>
           </div>
 
-          <div className="mb-6 pb-6 border-b border-emerald-200">
-            <h2 className="text-3xl font-bold text-emerald-900 mb-2">{plantData.name}</h2>
-            <p className="text-base italic text-emerald-700 mb-3">{plantData.scientificName}</p>
+          <div className="mb-6 pb-6 border-b border-border">
+            <h2 className="text-3xl font-bold text-foreground mb-2">{plantData.name}</h2>
+            <p className="text-base italic text-muted-foreground mb-3">{plantData.scientificName}</p>
             {plantData.confidence && (
               <div>
-                <div className="flex items-center justify-between text-sm text-emerald-700 mb-2">
+                <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
                   <span className="font-semibold">Confidence</span>
                   <span>{Math.round((plantData.confidence || 0) * 100)}%</span>
                 </div>
@@ -600,10 +600,10 @@ function AddNewPlantView({
 
           {plantData.commonNames && plantData.commonNames.length > 0 && (
             <div className="mb-6">
-              <h4 className="text-sm font-semibold text-emerald-800 mb-3">Common Names</h4>
+              <h4 className="text-sm font-semibold text-foreground mb-3">Common Names</h4>
               <div className="flex flex-wrap gap-2">
                 {plantData.commonNames.map((name, idx) => (
-                  <span key={idx} className="px-4 py-2 bg-emerald-50 text-emerald-800 rounded-full text-sm border border-emerald-200 font-medium">
+                  <span key={idx} className="px-4 py-2 bg-secondary text-foreground rounded-full text-sm border border-border font-medium">
                     {name}
                   </span>
                 ))}
@@ -612,43 +612,43 @@ function AddNewPlantView({
           )}
 
           {plantData.taxonomy && Object.keys(plantData.taxonomy).length > 0 && (
-            <div className="mb-6 p-5 bg-emerald-50 rounded-lg">
-              <h4 className="text-sm font-semibold text-emerald-800 mb-4">Classification</h4>
+            <div className="mb-6 p-5 bg-secondary rounded-lg">
+              <h4 className="text-sm font-semibold text-foreground mb-4">Classification</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                 {plantData.taxonomy.kingdom && (
                   <div className="flex justify-between">
-                    <span className="text-emerald-700 font-medium">Kingdom:</span>
-                    <span className="text-emerald-900">{plantData.taxonomy.kingdom}</span>
+                    <span className="text-muted-foreground font-medium">Kingdom:</span>
+                    <span className="text-foreground">{plantData.taxonomy.kingdom}</span>
                   </div>
                 )}
                 {plantData.taxonomy.phylum && (
                   <div className="flex justify-between">
-                    <span className="text-emerald-700 font-medium">Phylum:</span>
-                    <span className="text-emerald-900">{plantData.taxonomy.phylum}</span>
+                    <span className="text-muted-foreground font-medium">Phylum:</span>
+                    <span className="text-foreground">{plantData.taxonomy.phylum}</span>
                   </div>
                 )}
                 {plantData.taxonomy.class && (
                   <div className="flex justify-between">
-                    <span className="text-emerald-700 font-medium">Class:</span>
-                    <span className="text-emerald-900">{plantData.taxonomy.class}</span>
+                    <span className="text-muted-foreground font-medium">Class:</span>
+                    <span className="text-foreground">{plantData.taxonomy.class}</span>
                   </div>
                 )}
                 {plantData.taxonomy.order && (
                   <div className="flex justify-between">
-                    <span className="text-emerald-700 font-medium">Order:</span>
-                    <span className="text-emerald-900">{plantData.taxonomy.order}</span>
+                    <span className="text-muted-foreground font-medium">Order:</span>
+                    <span className="text-foreground">{plantData.taxonomy.order}</span>
                   </div>
                 )}
                 {plantData.taxonomy.family && (
                   <div className="flex justify-between">
-                    <span className="text-emerald-700 font-medium">Family:</span>
-                    <span className="text-emerald-900">{plantData.taxonomy.family}</span>
+                    <span className="text-muted-foreground font-medium">Family:</span>
+                    <span className="text-foreground">{plantData.taxonomy.family}</span>
                   </div>
                 )}
                 {plantData.taxonomy.genus && (
                   <div className="flex justify-between">
-                    <span className="text-emerald-700 font-medium">Genus:</span>
-                    <span className="text-emerald-900">{plantData.taxonomy.genus}</span>
+                    <span className="text-muted-foreground font-medium">Genus:</span>
+                    <span className="text-foreground">{plantData.taxonomy.genus}</span>
                   </div>
                 )}
               </div>
@@ -657,27 +657,27 @@ function AddNewPlantView({
 
           {plantData.description && (
             <div className="mb-6">
-              <h4 className="text-sm font-semibold text-emerald-800 mb-3 flex items-center gap-2">
+              <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                 <span>📄</span> Description
               </h4>
-              <p className="text-sm text-emerald-900 leading-relaxed">{plantData.description}</p>
+              <p className="text-sm text-foreground leading-relaxed">{plantData.description}</p>
             </div>
           )}
 
           {plantData.medicinalUses && (
             <div className="mb-6 p-6 bg-purple-50 rounded-lg border-2 border-purple-200">
-              <h4 className="text-sm font-semibold text-emerald-800 mb-4 flex items-center gap-2">
+              <h4 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
                 <span className="text-lg">💊</span> Medicinal Uses & Ayurvedic Information
               </h4>
-              <div className="prose prose-sm max-w-none prose-headings:text-emerald-900 prose-p:text-emerald-900 prose-li:text-emerald-900 prose-strong:text-emerald-900">
+              <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground">
                 <ReactMarkdown
                   components={{
-                    h2: ({ node, ...props }) => <h2 className="text-lg font-bold text-emerald-900 mt-4 mb-2" {...props} />,
-                    h3: ({ node, ...props }) => <h3 className="text-base font-bold text-emerald-900 mt-3 mb-2" {...props} />,
-                    p: ({ node, ...props }) => <p className="text-sm text-emerald-900 mb-3 leading-relaxed" {...props} />,
-                    ul: ({ node, ...props }) => <ul className="list-disc list-inside space-y-1 text-sm text-emerald-900 mb-3" {...props} />,
-                    li: ({ node, ...props }) => <li className="text-emerald-900" {...props} />,
-                    strong: ({ node, ...props }) => <strong className="font-bold text-emerald-900" {...props} />,
+                    h2: ({ node, ...props }) => <h2 className="text-lg font-bold text-foreground mt-4 mb-2" {...props} />,
+                    h3: ({ node, ...props }) => <h3 className="text-base font-bold text-foreground mt-3 mb-2" {...props} />,
+                    p: ({ node, ...props }) => <p className="text-sm text-foreground mb-3 leading-relaxed" {...props} />,
+                    ul: ({ node, ...props }) => <ul className="list-disc list-inside space-y-1 text-sm text-foreground mb-3" {...props} />,
+                    li: ({ node, ...props }) => <li className="text-foreground" {...props} />,
+                    strong: ({ node, ...props }) => <strong className="font-bold text-foreground" {...props} />,
                   }}
                 >
                   {plantData.medicinalUses}
@@ -688,7 +688,7 @@ function AddNewPlantView({
 
           {plantData.similarImages && plantData.similarImages.length > 0 && (
             <div className="mb-6">
-              <h4 className="text-sm font-semibold text-emerald-800 mb-4 flex items-center gap-2">
+              <h4 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
                 <span>🖼️</span> Similar Images
               </h4>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -712,7 +712,7 @@ function AddNewPlantView({
             </div>
           )}
 
-          <div className="flex flex-wrap gap-3 pt-6 border-t border-emerald-200">
+          <div className="flex flex-wrap gap-3 pt-6 border-t border-border">
             {plantData.wikipediaUrl && (
               <a
                 href={plantData.wikipediaUrl}
@@ -728,7 +728,7 @@ function AddNewPlantView({
                 href={`https://www.gbif.org/species/${plantData.gbifId}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-4 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition text-sm font-medium flex items-center gap-2"
+                className="px-4 py-2 bg-success/20 text-success rounded-lg hover:bg-success/30 transition text-sm font-medium flex items-center gap-2"
               >
                 🔬 GBIF
               </a>
@@ -769,8 +769,8 @@ function MyPlantsGallery({ myPlants, loadingPlants, setSelectedPlant }: any) {
     return (
       <div className="bg-white rounded-2xl p-12 text-center shadow-lg">
         <div className="text-6xl mb-4">🌿</div>
-        <h3 className="text-xl font-semibold text-emerald-900 mb-2">No Plants Yet</h3>
-        <p className="text-emerald-700">Start by adding your first plant using the "Add New Plant" button!</p>
+        <h3 className="text-xl font-semibold text-foreground mb-2">No Plants Yet</h3>
+        <p className="text-muted-foreground">Start by adding your first plant using the "Add New Plant" button!</p>
       </div>
     );
   }
@@ -807,8 +807,8 @@ function MyPlantsGallery({ myPlants, loadingPlants, setSelectedPlant }: any) {
               />
             )}
           </div>
-          <h3 className="font-bold text-emerald-900 mb-1">{plant.naturalName}</h3>
-          <p className="text-sm text-emerald-700 italic mb-2">{plant.scientificName}</p>
+          <h3 className="font-bold text-foreground mb-1">{plant.naturalName}</h3>
+          <p className="text-sm text-muted-foreground italic mb-2">{plant.scientificName}</p>
           <p className="text-xs text-gray-500">{new Date(plant.createdAt).toLocaleDateString()}</p>
         </div>
       ))}
@@ -994,18 +994,18 @@ function SavePlantFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-emerald-900">
+          <DialogTitle className="text-2xl font-bold text-foreground">
             Save Plant to Database
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <h4 className="text-sm font-semibold text-emerald-800">Personal Information</h4>
+            <h4 className="text-sm font-semibold text-foreground">Personal Information</h4>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="firstName" className="text-emerald-900">First Name *</Label>
+                <Label htmlFor="firstName" className="text-foreground">First Name *</Label>
                 <Input
                   id="firstName"
                   value={formData.firstName}
@@ -1019,7 +1019,7 @@ function SavePlantFormDialog({
               </div>
 
               <div>
-                <Label htmlFor="lastName" className="text-emerald-900">Last Name</Label>
+                <Label htmlFor="lastName" className="text-foreground">Last Name</Label>
                 <Input
                   id="lastName"
                   value={formData.lastName}
@@ -1030,7 +1030,7 @@ function SavePlantFormDialog({
             </div>
 
             <div>
-              <Label htmlFor="email" className="text-emerald-900">Email *</Label>
+              <Label htmlFor="email" className="text-foreground">Email *</Label>
               <Input
                 id="email"
                 type="email"
@@ -1045,7 +1045,7 @@ function SavePlantFormDialog({
             </div>
 
             <div>
-              <Label htmlFor="phoneNumber" className="text-emerald-900">Phone Number *</Label>
+              <Label htmlFor="phoneNumber" className="text-foreground">Phone Number *</Label>
               <Input
                 id="phoneNumber"
                 type="tel"
@@ -1062,18 +1062,18 @@ function SavePlantFormDialog({
           </div>
 
           <div className="space-y-2">
-            <h4 className="text-sm font-semibold text-emerald-800">Location Information</h4>
+            <h4 className="text-sm font-semibold text-foreground">Location Information</h4>
 
             {requestingLocation && locationGranted === null && (
-              <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
-                <p className="text-sm text-emerald-800">📍 Requesting GPS location...</p>
+              <div className="p-3 bg-secondary rounded-lg border border-border">
+                <p className="text-sm text-foreground">📍 Requesting GPS location...</p>
               </div>
             )}
 
             {locationGranted === true && (
-              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                <p className="text-sm text-green-800">✅ Location captured via GPS</p>
-                <p className="text-xs text-green-700 mt-1">
+              <div className="p-3 bg-success/20 rounded-lg border border-success/30">
+                <p className="text-sm text-success">✅ Location captured via GPS</p>
+                <p className="text-xs text-success/80 mt-1">
                   Coordinates: {formData.location.latitude?.toFixed(4)}, {formData.location.longitude?.toFixed(4)}
                 </p>
               </div>
@@ -1086,7 +1086,7 @@ function SavePlantFormDialog({
                 </div>
 
                 <div>
-                  <Label htmlFor="country" className="text-emerald-900">Country *</Label>
+                  <Label htmlFor="country" className="text-foreground">Country *</Label>
                   <Input
                     id="country"
                     value={formData.location.country}
@@ -1100,7 +1100,7 @@ function SavePlantFormDialog({
                 </div>
 
                 <div>
-                  <Label htmlFor="state" className="text-emerald-900">State/Province *</Label>
+                  <Label htmlFor="state" className="text-foreground">State/Province *</Label>
                   <Input
                     id="state"
                     value={formData.location.state}
@@ -1114,7 +1114,7 @@ function SavePlantFormDialog({
                 </div>
 
                 <div>
-                  <Label htmlFor="city" className="text-emerald-900">City *</Label>
+                  <Label htmlFor="city" className="text-foreground">City *</Label>
                   <Input
                     id="city"
                     value={formData.location.city}
@@ -1253,7 +1253,7 @@ function PlantMapView({ myPlants, loadingPlants, setSelectedPlant }: any) {
       const isMultipleAtLocation = plantsAtLocation.length > 1;
 
       plantsAtLocation.forEach((plant, index) => {
-        const borderColor = plant.locationType === 'gps' ? '#10b981' : '#3b82f6';
+        const borderColor = plant.locationType === 'gps' ? '#2F6B3D' : '#3b82f6';
 
         let imageSrc = '/placeholder.svg';
         if (plant.imageBase64) {
@@ -1269,7 +1269,7 @@ function PlantMapView({ myPlants, loadingPlants, setSelectedPlant }: any) {
 
         // Create icon with cluster badge for multiple plants
         const clusterBadge = isMultipleAtLocation ? `
-          <div style="position: absolute; top: -6px; right: -6px; background: #10b981; color: white; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border: 2px solid white; z-index: 10;">
+          <div style="position: absolute; top: -6px; right: -6px; background: #2F6B3D; color: white; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border: 2px solid white; z-index: 10;">
             ${plantsAtLocation.length}
           </div>
         ` : '';
@@ -1296,7 +1296,7 @@ function PlantMapView({ myPlants, loadingPlants, setSelectedPlant }: any) {
           // Cluster popup - show all plants with clickable selection
           popupContent = `
             <div style="max-width: 280px; font-family: system-ui;">
-              <div style="font-weight: bold; color: #065f46; font-size: 13px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid #d1fae5;">
+              <div style="font-weight: bold; color: #2F6B3D; font-size: 13px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid #E8F3EC;">
                 🌿 ${plantsAtLocation.length} Plants at this location
               </div>
               <div style="max-height: 350px; overflow-y: auto; padding-right: 4px;">
@@ -1304,15 +1304,15 @@ function PlantMapView({ myPlants, loadingPlants, setSelectedPlant }: any) {
                   <div 
                     onclick="window.selectPlantFromCluster('${p._id}', '${plant.naturalName}', '${p.scientificName || ''}')"
                     style="padding: 10px; margin-bottom: 6px; border-left: 4px solid ${idx === index ? borderColor : '#cbd5e1'}; 
-                           background: ${idx === index ? '#f0fdf4' : '#fafafa'}; 
+                           background: ${idx === index ? '#E8F3EC' : '#fafafa'}; 
                            border-radius: 6px; cursor: pointer; transition: all 0.2s;"
-                    onmouseover="this.style.background='#f0fdf4'; this.style.borderLeftColor='#10b981'"
-                    onmouseout="this.style.background='${idx === index ? '#f0fdf4' : '#fafafa'}'; this.style.borderLeftColor='${idx === index ? borderColor : '#cbd5e1'}'"
+                    onmouseover="this.style.background='#E8F3EC'; this.style.borderLeftColor='#2F6B3D'"
+                    onmouseout="this.style.background='${idx === index ? '#E8F3EC' : '#fafafa'}'; this.style.borderLeftColor='${idx === index ? borderColor : '#cbd5e1'}'"
                   >
-                    <div style="font-weight: bold; color: #065f46; font-size: 13px; margin-bottom: 2px;">
+                    <div style="font-weight: bold; color: #2F6B3D; font-size: 13px; margin-bottom: 2px;">
                       ${p.naturalName}
                     </div>
-                    <div style="font-style: italic; color: #047857; font-size: 11px; margin-bottom: 4px;">
+                    <div style="font-style: italic; color: #4F8D5A; font-size: 11px; margin-bottom: 4px;">
                       ${p.scientificName || 'Scientific name not available'}
                     </div>
                     ${p.location?.city ? `
@@ -1329,13 +1329,13 @@ function PlantMapView({ myPlants, loadingPlants, setSelectedPlant }: any) {
           // Single plant popup
           popupContent = `
             <div style="max-width: 220px; font-family: system-ui;">
-              <div style="font-weight: bold; color: #065f46; font-size: 14px; margin-bottom: 4px;">
+              <div style="font-weight: bold; color: #2F6B3D; font-size: 14px; margin-bottom: 4px;">
                 ${plant.naturalName || plant.naturalName}
               </div>
-              <div style="font-style: italic; color: #047857; font-size: 12px; margin-bottom: 8px;">
+              <div style="font-style: italic; color: #4F8D5A; font-size: 12px; margin-bottom: 8px;">
                 ${plant.scientificName || ''}
               </div>
-              <div style="padding: 4px 8px; background: ${plant.locationType === 'gps' ? '#d1fae5' : '#dbeafe'}; border-radius: 4px; font-size: 11px; color: #065f46;">
+              <div style="padding: 4px 8px; background: ${plant.locationType === 'gps' ? '#E8F3EC' : '#dbeafe'}; border-radius: 4px; font-size: 11px; color: #2F6B3D;">
                 ${plant.locationType === 'gps' ? '📍 GPS Location' : '📌 Approximate Location'}
               </div>
               ${plant.location?.city ? `
@@ -1446,8 +1446,8 @@ function PlantMapView({ myPlants, loadingPlants, setSelectedPlant }: any) {
       {/* Legend and Statistics - Skeleton while loading */}
       <div className="bg-white rounded-2xl p-4 shadow-lg">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold text-emerald-900">Map Legend</h3>
-          <div className="text-sm text-emerald-700">
+          <h3 className="text-lg font-semibold text-foreground">Map Legend</h3>
+          <div className="text-sm text-muted-foreground">
             {processedPlants.length > 0
               ? `${processedPlants.length} plant${processedPlants.length !== 1 ? 's' : ''} displayed`
               : 'No plants with location data'}
@@ -1456,20 +1456,20 @@ function PlantMapView({ myPlants, loadingPlants, setSelectedPlant }: any) {
         <div className="grid grid-cols-3 gap-4 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full border-2 border-green-600"></div>
-            <span className="text-emerald-800">
+            <span className="text-foreground">
               <strong>{gpsPlants}</strong> GPS locations
             </span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full border-2 border-blue-600"></div>
-            <span className="text-emerald-800">
+            <span className="text-foreground">
               <strong>{geocodedPlants}</strong> Approximate locations
             </span>
           </div>
           {noLocationPlants > 0 && (
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded-full bg-gray-300"></div>
-              <span className="text-emerald-800">
+              <span className="text-foreground">
                 <strong>{noLocationPlants}</strong> Without location
               </span>
             </div>
@@ -1485,27 +1485,49 @@ function PlantMapView({ myPlants, loadingPlants, setSelectedPlant }: any) {
         ></div>
 
         {!mapReady && (
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 to-green-100 flex items-center justify-center">
+          <div className="absolute inset-0 bg-gradient-to-br from-secondary to-background flex items-center justify-center">
             <div className="text-center">
               <div className="text-6xl mb-4 animate-bounce">🗺️</div>
-              <div className="text-emerald-800 font-medium text-lg">Initializing map...</div>
-              <div className="mt-4 w-64 h-2 bg-emerald-200 rounded-full">
-                <div className="h-2 bg-emerald-600 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+              <div className="text-foreground font-medium text-lg">Initializing map...</div>
+              <div className="mt-4 w-64 h-2 bg-secondary rounded-full">
+                <div className="h-2 bg-primary rounded-full animate-pulse" style={{ width: '60%' }}></div>
               </div>
             </div>
           </div>
         )}
 
         {mapReady && processedPlants.length === 0 && !loadingPlants && !geocodingPlants && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-95 pointer-events-none">
-            <div className="text-center">
-              <div className="text-6xl mb-4">🗺️</div>
-              <h3 className="text-xl font-semibold text-emerald-900 mb-2">No Plants on Map</h3>
-              <p className="text-emerald-700">
-                {noLocationPlants > 0
-                  ? `${noLocationPlants} plant${noLocationPlants !== 1 ? 's' : ''} without location data`
-                  : 'Add plants with location data to see them on the map'}
-              </p>
+          <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm pointer-events-none">
+            <div className="text-center max-w-md px-6">
+              <div className="text-6xl mb-4 animate-bounce">🌿</div>
+              <h3 className="text-xl font-semibold text-foreground mb-3">No Plants Visible Yet</h3>
+              {noLocationPlants > 0 ? (
+                <>
+                  <p className="text-muted-foreground mb-4">
+                    {noLocationPlants} plant{noLocationPlants !== 1 ? 's' : ''} in your collection don't have location data yet.
+                  </p>
+                  <div className="bg-secondary rounded-lg p-4 text-left text-sm">
+                    <p className="font-semibold text-foreground mb-2">💡 How to add location:</p>
+                    <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                      <li>Click "Add New" to upload a plant</li>
+                      <li>Allow GPS access when saving</li>
+                      <li>Or enter city, state, and country manually</li>
+                    </ul>
+                  </div>
+                </>
+              ) : (
+                <div className="text-muted-foreground space-y-2">
+                  <p className="mb-4">Upload your first plant with location data to see it on the map!</p>
+                  <div className="bg-secondary rounded-lg p-4 text-left text-sm">
+                    <p className="font-semibold text-foreground mb-2">💡 Tips for accurate maps:</p>
+                    <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                      <li>Enable GPS when saving (most accurate)</li>
+                      <li>Or provide city, state, country for approximate location</li>
+                      <li>Plants without location won't appear on map</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
