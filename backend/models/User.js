@@ -46,6 +46,18 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  isBlocked: {
+    type: Boolean,
+    default: false
+  },
+  suspendedUntil: {
+    type: Date,
+    default: null
+  },
+  blockReason: {
+    type: String,
+    default: ''
+  },
   lastLogin: {
     type: Date,
     default: Date.now

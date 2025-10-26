@@ -4,6 +4,8 @@ const path = require('path');
 const fs = require('fs');
 const plantIdService = require('../services/plantIdService');
 const groqService = require('../services/groqService');
+const User = require('../models/User');
+const { authenticateUser } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
@@ -95,7 +97,7 @@ router.post('/test-plant-recognition', upload.single('plantImage'), async (req, 
 
   } catch (error) {
     console.error('❌ Test error:', error);
-    
+
     // Clean up file if exists
     if (req.file && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
@@ -105,6 +107,47 @@ router.post('/test-plant-recognition', upload.single('plantImage'), async (req, 
       status: 'error',
       message: 'Test failed',
       error: error.message
+    });
+  }
+});
+
+// Development helper: Make current user admin
+router.post('/make-admin', authenticateUser, async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Authentication required'
+      });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found'
+      });
+    }
+
+    user.role = 'admin';
+    await user.save();
+
+    console.log(`✅ User ${user.email} promoted to admin`);
+
+    res.json({
+      status: 'success',
+      message: 'User promoted to admin successfully',
+      data: {
+        id: user._id,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Make admin error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to promote user to admin'
     });
   }
 });

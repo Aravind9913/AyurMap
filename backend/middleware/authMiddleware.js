@@ -177,6 +177,14 @@ const authenticateUser = async (req, res, next) => {
         profile_image_url: user.profileImage
       };
 
+      // Check if this is the first user and auto-assign admin role
+      const totalUsers = await User.countDocuments();
+      if (totalUsers === 1 && user.role === 'consumer') {
+        user.role = 'admin';
+        await user.save();
+        console.log('✅ First user auto-assigned admin role');
+      }
+
       console.log('🎉 Authentication successful for user:', user.email, 'role:', user.role);
       next();
 

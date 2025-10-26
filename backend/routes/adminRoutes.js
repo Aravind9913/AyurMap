@@ -15,11 +15,17 @@ const router = express.Router();
 router.get('/dashboard', authenticateUser, adminOnly, async (req, res) => {
   try {
     // Get total counts
-    const totalUsers = await User.countDocuments({ role: 'user' });
+    const totalUsers = await User.countDocuments({ role: { $in: ['consumer', 'farmer'] } });
     const totalFarmers = await User.countDocuments({ role: 'farmer' });
+    const totalConsumers = await User.countDocuments({ role: 'consumer' });
     const totalPlants = await Plant.countDocuments({ isActive: true });
     const totalChats = await Chat.countDocuments({ isActive: true });
     const reportedChats = await Chat.countDocuments({ isReported: true });
+
+    // Debug: Check all users
+    const allUsers = await User.find({}, 'role email');
+    console.log('📊 All users in DB:', allUsers.map(u => ({ email: u.email, role: u.role })));
+    console.log('📊 Dashboard stats:', { totalUsers, totalFarmers, totalConsumers, totalPlants, totalChats });
 
     // Get recent activity
     const recentPlants = await Plant.find({ isActive: true })
@@ -77,6 +83,7 @@ router.get('/dashboard', authenticateUser, adminOnly, async (req, res) => {
       data: {
         overview: {
           totalUsers,
+          totalConsumers,
           totalFarmers,
           totalPlants,
           totalChats,
@@ -106,7 +113,7 @@ router.get('/dashboard', authenticateUser, adminOnly, async (req, res) => {
 router.get('/users', authenticateUser, adminOnly, async (req, res) => {
   try {
     const { page = 1, limit = 20, role, search } = req.query;
-    
+
     const filter = {};
     if (role) filter.role = role;
     if (search) {
@@ -153,7 +160,7 @@ router.get('/users', authenticateUser, adminOnly, async (req, res) => {
 router.get('/plants', authenticateUser, adminOnly, async (req, res) => {
   try {
     const { page = 1, limit = 20, farmerEmail, isActive, search } = req.query;
-    
+
     const filter = {};
     if (farmerEmail) filter.farmerEmail = farmerEmail;
     if (isActive !== undefined) filter.isActive = isActive === 'true';
@@ -202,7 +209,7 @@ router.get('/plants', authenticateUser, adminOnly, async (req, res) => {
 router.get('/chats', authenticateUser, adminOnly, async (req, res) => {
   try {
     const { page = 1, limit = 20, isActive, isReported } = req.query;
-    
+
     const filter = {};
     if (isActive !== undefined) filter.isActive = isActive === 'true';
     if (isReported !== undefined) filter.isReported = isReported === 'true';
@@ -245,7 +252,7 @@ router.get('/chats', authenticateUser, adminOnly, async (req, res) => {
 router.delete('/users/:id', authenticateUser, adminOnly, async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
-    
+
     if (!user) {
       return res.status(404).json({
         status: 'error',
@@ -298,7 +305,7 @@ router.delete('/users/:id', authenticateUser, adminOnly, async (req, res) => {
 router.delete('/plants/:id', authenticateUser, adminOnly, async (req, res) => {
   try {
     const plant = await Plant.findById(req.params.id);
-    
+
     if (!plant) {
       return res.status(404).json({
         status: 'error',
@@ -355,7 +362,7 @@ router.put('/plants/:id/verify',
 
       const plant = await Plant.findByIdAndUpdate(
         req.params.id,
-        { 
+        {
           isVerified,
           verificationNotes: notes || ''
         },
@@ -408,7 +415,7 @@ router.put('/chats/:id/resolve-report',
 
       const chat = await Chat.findByIdAndUpdate(
         req.params.id,
-        { 
+        {
           isReported: false,
           adminNotes: adminNotes || ''
         },
@@ -443,7 +450,7 @@ router.put('/chats/:id/resolve-report',
 router.delete('/chats/:id', authenticateUser, adminOnly, async (req, res) => {
   try {
     const chat = await Chat.findByIdAndDelete(req.params.id);
-    
+
     if (!chat) {
       return res.status(404).json({
         status: 'error',
@@ -546,6 +553,167 @@ router.get('/analytics/export', authenticateUser, adminOnly, async (req, res) =>
     res.status(500).json({
       status: 'error',
       message: 'Failed to export analytics data'
+    });
+  }
+});
+
+// @route   PUT /api/admin/users/:id/block
+// @desc    Block or unblock user
+// @access  Private (Admin)
+router.put('/users/:id/block',
+  authenticateUser,
+  adminOnly,
+  [
+    body('isBlocked').isBoolean().withMessage('isBlocked must be a boolean'),
+    body('blockReason').optional().isString().withMessage('Block reason must be a string')
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Validation failed',
+          errors: errors.array()
+        });
+      }
+
+      const { isBlocked, blockReason } = req.body;
+      const updateData = { isBlocked, blockReason: blockReason || '' };
+
+      const user = await User.findByIdAndUpdate(
+        req.params.id,
+        updateData,
+        { new: true }
+      );
+
+      if (!user) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'User not found'
+        });
+      }
+
+      res.json({
+        status: 'success',
+        message: `User ${isBlocked ? 'blocked' : 'unblocked'} successfully`,
+        data: user
+      });
+    } catch (error) {
+      console.error('Block user error:', error);
+      res.status(500).json({
+        status: 'error',
+        message: 'Failed to block user'
+      });
+    }
+  }
+);
+
+// @route   PUT /api/admin/users/:id/suspend
+// @desc    Suspend user temporarily
+// @access  Private (Admin)
+router.put('/users/:id/suspend',
+  authenticateUser,
+  adminOnly,
+  [
+    body('suspendedUntil').isISO8601().withMessage('Valid date is required'),
+    body('blockReason').optional().isString().withMessage('Reason must be a string')
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Validation failed',
+          errors: errors.array()
+        });
+      }
+
+      const { suspendedUntil, blockReason } = req.body;
+
+      const user = await User.findByIdAndUpdate(
+        req.params.id,
+        {
+          suspendedUntil: new Date(suspendedUntil),
+          blockReason: blockReason || '',
+          isActive: false
+        },
+        { new: true }
+      );
+
+      if (!user) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'User not found'
+        });
+      }
+
+      res.json({
+        status: 'success',
+        message: 'User suspended successfully',
+        data: user
+      });
+    } catch (error) {
+      console.error('Suspend user error:', error);
+      res.status(500).json({
+        status: 'error',
+        message: 'Failed to suspend user'
+      });
+    }
+  }
+);
+
+// @route   GET /api/admin/users/:id/activity
+// @desc    Get user's detailed activity
+// @access  Private (Admin)
+router.get('/users/:id/activity', authenticateUser, adminOnly, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('-searchHistory');
+
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found'
+      });
+    }
+
+    // Get user's plants
+    const userPlants = await Plant.find({ farmerId: user._id })
+      .select('-plantIdResponse -groqResponse')
+      .sort({ createdAt: -1 });
+
+    // Get user's chats
+    const userChats = await Chat.find({
+      $or: [{ farmerId: user._id }, { userId: user._id }]
+    })
+      .populate('plantId', 'naturalName scientificName')
+      .sort({ lastMessageAt: -1 });
+
+    // Get search history
+    const userWithHistory = await User.findById(req.params.id).select('searchHistory');
+
+    res.json({
+      status: 'success',
+      data: {
+        user,
+        stats: {
+          totalPlants: userPlants.length,
+          totalChats: userChats.length,
+          totalSearches: userWithHistory?.searchHistory?.length || 0,
+          joinedDate: user.createdAt,
+          lastLogin: user.lastLogin
+        },
+        plants: userPlants,
+        chats: userChats,
+        searchHistory: userWithHistory?.searchHistory || []
+      }
+    });
+  } catch (error) {
+    console.error('Get user activity error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch user activity'
     });
   }
 });
