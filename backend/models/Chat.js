@@ -30,7 +30,7 @@ const chatSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  
+
   // Chat status
   isActive: {
     type: Boolean,
@@ -40,7 +40,7 @@ const chatSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
-  
+
   // Chat participants
   participants: [{
     userId: {
@@ -55,7 +55,7 @@ const chatSchema = new mongoose.Schema({
       default: Date.now
     }
   }],
-  
+
   // Messages
   messages: [{
     senderId: {
@@ -102,7 +102,7 @@ const chatSchema = new mongoose.Schema({
       default: Date.now
     }
   }],
-  
+
   // Chat metadata
   totalMessages: {
     type: Number,
@@ -118,7 +118,7 @@ const chatSchema = new mongoose.Schema({
       default: 0
     }
   },
-  
+
   // Moderation
   isReported: {
     type: Boolean,
@@ -130,7 +130,18 @@ const chatSchema = new mongoose.Schema({
     ref: 'User'
   },
   reportedAt: Date,
-  adminNotes: String
+  adminNotes: String,
+
+  // Typing status
+  typing: {
+    type: Boolean,
+    default: false
+  },
+  typingBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  typingAt: Date
 }, {
   timestamps: true
 });

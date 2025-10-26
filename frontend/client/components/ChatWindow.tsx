@@ -26,7 +26,7 @@ export default function ChatWindow({ chat, role, onBack }: ChatWindowProps) {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-    const { messages, sendMessage, isConnected, isTyping, isPolling } = useChat({
+    const { messages, sendMessage, isConnected, isTyping, isPolling, otherPersonTyping, startTyping, stopTyping } = useChat({
         chatId: chat?._id || null,
         isAdmin: role === 'admin',
     });
@@ -56,10 +56,20 @@ export default function ChatWindow({ chat, role, onBack }: ChatWindowProps) {
             setIsSending(true);
             await sendMessage(messageText);
             setMessageText('');
+            await stopTyping(); // Stop typing indicator after sending
         } catch (error) {
             console.error('Error sending message:', error);
         } finally {
             setIsSending(false);
+        }
+    };
+
+    // Handle typing detection
+    const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.value.length > 0 && !isSending) {
+            startTyping();
+        } else {
+            stopTyping();
         }
     };
 
@@ -139,7 +149,7 @@ export default function ChatWindow({ chat, role, onBack }: ChatWindowProps) {
             {/* Messages Area */}
             <div
                 ref={messagesContainerRef}
-                className="flex-1 overflow-y-auto px-4 py-4 bg-gray-50"
+                className="flex-1 overflow-y-auto px-6 py-2 bg-gray-50"
             >
                 {messages.length === 0 ? (
                     <div className="text-center text-gray-500 mt-8">
@@ -153,7 +163,7 @@ export default function ChatWindow({ chat, role, onBack }: ChatWindowProps) {
                         return (
                             <div
                                 key={message._id || index}
-                                className={`flex gap-3 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}
+                                className={`flex gap-3 mb-1 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}
                             >
                                 {!isMine && showAvatar && (
                                     <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-md">
@@ -172,8 +182,13 @@ export default function ChatWindow({ chat, role, onBack }: ChatWindowProps) {
                                             }`}
                                     >
                                         <div className="text-sm">{message.message}</div>
-                                        <div className={`text-xs mt-1 ${isMine ? 'text-emerald-100' : 'text-gray-400'}`}>
-                                            {formatTime(message.timestamp)}
+                                        <div className={`text-xs mt-1 flex items-center gap-1 ${isMine ? 'text-emerald-100' : 'text-gray-400'}`}>
+                                            {isMine && (
+                                                <span className="text-xs" title={message.isRead ? 'Read' : 'Sent'}>
+                                                    {message.isRead ? '✓✓' : '✓'}
+                                                </span>
+                                            )}
+                                            <span>{formatTime(message.timestamp)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -181,18 +196,18 @@ export default function ChatWindow({ chat, role, onBack }: ChatWindowProps) {
                         );
                     })
                 )}
-                {isTyping && (
+                {otherPersonTyping && (
                     <div className="flex gap-3">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-md">
+                        <div className="w-9 h-9 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
                             <span className="text-white text-xs font-semibold">
                                 {otherParticipant?.firstName?.charAt(0) || 'U'}
                             </span>
                         </div>
-                        <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-sm px-4 py-2.5 shadow-sm">
+                        <div className="bg-white border border-gray-200 rounded-lg px-3 py-2">
                             <div className="flex gap-1">
-                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" />
+                                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
                             </div>
                         </div>
                     </div>
@@ -207,7 +222,11 @@ export default function ChatWindow({ chat, role, onBack }: ChatWindowProps) {
                         <input
                             type="text"
                             value={messageText}
-                            onChange={(e) => setMessageText(e.target.value)}
+                            onChange={(e) => {
+                                setMessageText(e.target.value);
+                                handleTyping(e);
+                            }}
+                            onBlur={stopTyping}
                             placeholder="Type a message..."
                             disabled={isSending}
                             className="flex-1 px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 text-sm"
