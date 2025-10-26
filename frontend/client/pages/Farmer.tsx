@@ -200,59 +200,59 @@ export default function Farmer() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-green-100">
+    <div className="min-h-screen bg-gray-50">
       <div className="flex">
         {/* Sidebar */}
-        <div className="w-64 bg-white shadow-lg min-h-screen p-4">
-          <div className="text-2xl font-bold text-emerald-900 mb-8">🌿 AyurMap</div>
-          <div className="space-y-2">
+        <div className="w-64 bg-white border-r border-gray-200 min-h-screen p-6">
+          <div className="text-xl font-semibold text-gray-900 mb-8">AyurMap</div>
+          <div className="space-y-1">
             <button
               onClick={() => setActiveView('add-new')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeView === 'add-new'
-                ? 'bg-emerald-50 text-emerald-700 border-2 border-emerald-600'
-                : 'text-emerald-900 hover:bg-emerald-50'
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition ${activeView === 'add-new'
+                ? 'bg-gray-100 text-gray-900'
+                : 'text-gray-600 hover:bg-gray-50'
                 }`}
             >
-              <span className="text-xl">🌱</span>
-              <span className="font-medium">Add New Plant</span>
+              <span className="text-lg">🌱</span>
+              <span className="text-sm font-medium">Add New</span>
             </button>
             <button
               onClick={() => setActiveView('gallery')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeView === 'gallery'
-                ? 'bg-emerald-50 text-emerald-700 border-2 border-emerald-600'
-                : 'text-emerald-900 hover:bg-emerald-50'
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition ${activeView === 'gallery'
+                ? 'bg-gray-100 text-gray-900'
+                : 'text-gray-600 hover:bg-gray-50'
                 }`}
             >
-              <span className="text-xl">📚</span>
-              <span className="font-medium">My Plants</span>
+              <span className="text-lg">📚</span>
+              <span className="text-sm font-medium">My Plants</span>
             </button>
             <button
               onClick={() => setActiveView('map')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${activeView === 'map'
-                ? 'bg-emerald-50 text-emerald-700 border-2 border-emerald-600'
-                : 'text-emerald-900 hover:bg-emerald-50'
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition ${activeView === 'map'
+                ? 'bg-gray-100 text-gray-900'
+                : 'text-gray-600 hover:bg-gray-50'
                 }`}
             >
-              <span className="text-xl">🗺️</span>
-              <span className="font-medium">Map View</span>
+              <span className="text-lg">🗺️</span>
+              <span className="text-sm font-medium">Map</span>
             </button>
           </div>
-          <div className="mt-8 pt-8 border-t border-emerald-200">
-            <div className="flex items-center gap-3 mb-4">
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            <div className="flex items-center gap-3 mb-3">
               {user && (
                 <>
                   <img
                     src={((user as any)?.profileImageUrl ?? (user as any)?.imageUrl) as string}
                     alt={user.fullName || "user"}
-                    className="h-10 w-10 rounded-full object-cover border-2 border-emerald-300"
+                    className="h-8 w-8 rounded-full object-cover border border-gray-200"
                   />
-                  <div className="text-sm text-emerald-900 font-medium">{user.fullName}</div>
+                  <div className="text-sm text-gray-900 font-medium">{user.fullName}</div>
                 </>
               )}
             </div>
             <button
               onClick={() => signOut()}
-              className="w-full px-4 py-2 bg-white text-emerald-800 rounded-lg shadow hover:bg-emerald-50 transition text-sm font-medium border border-emerald-200"
+              className="w-full px-3 py-2 text-gray-600 rounded-lg hover:bg-gray-50 transition text-sm border border-gray-200"
             >
               Sign Out
             </button>
@@ -260,17 +260,17 @@ export default function Farmer() {
         </div>
 
         {/* Main Content */}
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-8">
           <div className="mb-6">
-            <h1 className="text-3xl font-extrabold text-emerald-900">
-              {activeView === 'add-new' ? '🌱 Add New Plant' : activeView === 'map' ? '🗺️ Map View' : '📚 My Plants Gallery'}
+            <h1 className="text-2xl font-semibold text-gray-900">
+              {activeView === 'add-new' ? 'Add New Plant' : activeView === 'map' ? 'Map View' : 'My Plants'}
             </h1>
-            <p className="text-emerald-700 mt-1">
+            <p className="text-gray-500 text-sm mt-1">
               {activeView === 'add-new'
-                ? 'Upload an image to identify and add a new plant to your collection'
+                ? 'Upload an image to identify and add a new plant'
                 : activeView === 'map'
                   ? 'View your plants on an interactive map'
-                  : `You have ${myPlants.length} ${myPlants.length === 1 ? 'plant' : 'plants'} in your collection`
+                  : `${myPlants.length} ${myPlants.length === 1 ? 'plant' : 'plants'} in your collection`
               }
             </p>
           </div>

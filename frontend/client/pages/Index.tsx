@@ -141,70 +141,54 @@ export default function Index() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-secondary to-background">
-      {gradients}
-
-      {/* Floating leaves */}
-      <Leaf className="absolute -left-10 top-24 h-36 w-36 text-primary/40 animate-float-slow" />
-      <Leaf className="absolute right-10 top-10 h-24 w-24 text-accent/40 animate-float" />
-      <Leaf className="absolute -right-8 bottom-16 h-40 w-40 text-primary/30 animate-float" />
-
-      <main className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6">
-        <div className="mx-auto max-w-3xl text-center animate-fade-in-up">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-medium text-emerald-800 shadow-sm ring-1 ring-emerald-200 backdrop-blur">
-            AI-Powered Ayurvedic Plant Locator
+    <div className="min-h-screen bg-gray-50">
+      <main className="flex min-h-screen flex-col items-center justify-center px-6">
+        <div className="mx-auto max-w-md w-full">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-semibold tracking-tight text-gray-900 mb-2">
+              AyurMap
+            </h1>
+            <p className="text-sm text-gray-500">
+              Ayurvedic plants at your fingertips
+            </p>
           </div>
-          <h1 className="mt-6 text-5xl font-extrabold tracking-tight text-emerald-900 md:text-6xl">
-            AyurMap
-          </h1>
-          <p className="mt-4 text-2xl font-semibold text-emerald-900/90">
-            🪴 Grow the Cure — Ayurvedic Healing, Mapped
-          </p>
-          <p className="mt-3 text-base leading-relaxed text-emerald-900/70">
-            Discover Ayurvedic plants, connect with farmers, and explore natural remedies near you.
-          </p>
 
-          <div className="mt-10">
-            <Button
-              size="lg"
-              className="group h-12 rounded-full bg-gradient-to-r from-emerald-600 to-emerald-500 px-8 text-base font-semibold text-white shadow-lg shadow-emerald-500/20 transition-transform duration-200 hover:scale-[1.03] focus-visible:scale-[1.03]"
-              onClick={() => setOpenRoleModal(true)}
-            >
-              <span className="relative">
-                <span className="absolute inset-0 -z-10 bg-[linear-gradient(110deg,rgba(255,255,255,0)_40%,rgba(255,255,255,.6)_50%,rgba(255,255,255,0)_60%)] bg-[length:200%_100%] opacity-40 transition group-hover:animate-shine" />
-                Get Started
-              </span>
-            </Button>
-          </div>
+          <Button
+            size="lg"
+            className="w-full h-12 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium transition-colors"
+            onClick={() => setOpenRoleModal(true)}
+          >
+            Get Started
+          </Button>
         </div>
 
-        <footer className="absolute bottom-6 left-0 right-0 z-10 mx-auto w-full px-6 text-center text-sm text-emerald-900/70">
-          © AyurMap — AI-Powered Ayurvedic Plant Locator.
+        <footer className="absolute bottom-6 left-0 right-0 text-center text-xs text-gray-500">
+          © AyurMap
         </footer>
       </main>
 
       <Dialog open={openRoleModal} onOpenChange={setOpenRoleModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-xl">Choose your role</DialogTitle>
+            <DialogTitle className="text-lg font-medium text-gray-900">Choose your role</DialogTitle>
           </DialogHeader>
           {!showAuth ? (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
               <button
                 onClick={() => handleSelectRole("Farmer")}
-                className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 text-emerald-800 shadow-sm transition hover:bg-emerald-100"
+                className="w-full rounded-lg border border-gray-200 bg-white p-4 text-left hover:bg-gray-50 transition"
               >
-                <div className="text-3xl">🌿</div>
-                <div className="mt-2 font-semibold">Farmer</div>
-                <div className="text-xs text-emerald-800/70">Upload & manage plants</div>
+                <div className="text-2xl mb-2">🌿</div>
+                <div className="font-medium text-gray-900">Farmer</div>
+                <div className="text-xs text-gray-500 mt-1">Upload & manage plants</div>
               </button>
               <button
                 onClick={() => handleSelectRole("Consumer")}
-                className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 text-emerald-800 shadow-sm transition hover:bg-emerald-100"
+                className="w-full rounded-lg border border-gray-200 bg-white p-4 text-left hover:bg-gray-50 transition"
               >
-                <div className="text-3xl">🌼</div>
-                <div className="mt-2 font-semibold">Consumer</div>
-                <div className="text-xs text-emerald-800/70">Explore plants near you</div>
+                <div className="text-2xl mb-2">🌼</div>
+                <div className="font-medium text-gray-900">Consumer</div>
+                <div className="text-xs text-gray-500 mt-1">Explore plants near you</div>
               </button>
             </div>
           ) : (
@@ -214,14 +198,18 @@ export default function Index() {
                 appearance={{
                   variables: {
                     colorPrimary: "#059669",
-                    colorText: "#064e3b",
+                    colorText: "#1f2937",
                     colorInputBackground: "#ffffff",
+                  },
+                  elements: {
+                    card: "shadow-none border border-gray-200",
+                    headerTitle: "text-gray-900 font-medium",
+                    headerSubtitle: "text-gray-500 text-sm",
+                    formButtonPrimary: "bg-emerald-600 hover:bg-emerald-700",
+                    socialButtonsBlockButton: "border border-gray-200 hover:bg-gray-50",
                   },
                 }}
               />
-              <p className="mt-3 text-center text-xs text-muted-foreground">
-                Continue with Google or sign in with Email
-              </p>
             </div>
           )}
         </DialogContent>
