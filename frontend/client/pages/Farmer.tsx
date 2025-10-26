@@ -1364,7 +1364,6 @@ function PlantMapView({ myPlants, loadingPlants, setSelectedPlant }: any) {
           clearTimeout(popupTimeout);
 
           hoverTimeout = setTimeout(() => {
-            marker.closeTooltip(); // Hide tooltip when opening popup
             marker.openPopup();
           }, 300); // Small delay to prevent accidental opens
         });

@@ -15,6 +15,7 @@ export const API_ENDPOINTS = {
   USER_START_CHAT: '/api/user/start-chat',
   USER_MY_CHATS: '/api/user/my-chats',
   USER_PROFILE: '/api/user/profile',
+  USER_POPULAR_PLANTS: '/api/user/popular-plants',
 
   // Farmer endpoints
   FARMER_UPLOAD_PLANT: '/api/farmer/upload-plant',

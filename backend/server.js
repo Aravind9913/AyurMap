@@ -37,12 +37,11 @@ app.use(cors({
 }));
 
 // Rate limiting
-const limiter = rateLimit({
+/*const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again later.'
-});
-app.use('/api/', limiter);
+});*/
 
 // Body parsing middleware (for non-multipart requests)
 // Note: multipart/form-data (file uploads) must be handled by multer

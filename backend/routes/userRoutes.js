@@ -119,7 +119,7 @@ router.post('/search-plants',
                 ]
               }
             ]
-          }).select('-plantIdResponse -groqResponse');
+          }).select('-plantIdResponse -groqResponse -imagePath');
         }
       } else {
         // Regular text search
@@ -137,7 +137,7 @@ router.post('/search-plants',
               ]
             }
           ]
-        }).select('-plantIdResponse -groqResponse');
+        }).select('-plantIdResponse -groqResponse -imagePath');
       }
 
       // Filter by location if provided
@@ -223,35 +223,90 @@ router.get('/plants-nearby',
         });
       }
 
-      const plants = await Plant.find({
+      // Find plants with valid GPS coordinates OR with city/state info
+      const allPlants = await Plant.find({
         isActive: true,
-        'location.latitude': {
-          $gte: parseFloat(latitude) - (radius / 111), // Rough conversion to degrees
-          $lte: parseFloat(latitude) + (radius / 111)
-        },
-        'location.longitude': {
-          $gte: parseFloat(longitude) - (radius / 111),
-          $lte: parseFloat(longitude) + (radius / 111)
-        }
-      }).select('-plantIdResponse -groqResponse');
+        $or: [
+          // Plants with valid GPS coordinates
+          {
+            'location.latitude': {
+              $gte: parseFloat(latitude) - (radius / 111),
+              $lte: parseFloat(latitude) + (radius / 111)
+            },
+            'location.longitude': {
+              $gte: parseFloat(longitude) - (radius / 111),
+              $lte: parseFloat(longitude) + (radius / 111)
+            }
+          },
+          // Plants without GPS (lat=0, lng=0) but with city/state info
+          {
+            'location.latitude': 0,
+            'location.longitude': 0,
+            'location.city': { $exists: true, $ne: '' }
+          }
+        ]
+      }).select('-plantIdResponse -groqResponse -imagePath');
+
+      console.log(`Found ${allPlants.length} plants for filtering`);
 
       // Calculate exact distances and filter
-      const nearbyPlants = plants.filter(plant => {
-        const distance = calculateDistance(
-          parseFloat(latitude), parseFloat(longitude),
-          plant.location.latitude, plant.location.longitude
-        );
-        return distance <= radius;
-      }).map(plant => {
-        const distance = calculateDistance(
-          parseFloat(latitude), parseFloat(longitude),
-          plant.location.latitude, plant.location.longitude
-        );
-        return {
-          ...plant.toObject(),
-          distance: Math.round(distance * 100) / 100 // Round to 2 decimal places
-        };
-      });
+      const nearbyPlants = [];
+
+      for (const plant of allPlants) {
+        let plantLat = plant.location.latitude;
+        let plantLng = plant.location.longitude;
+        let distance = Infinity;
+
+        // If plant has invalid GPS (0,0), try to geocode it
+        if (plantLat === 0 && plantLng === 0) {
+          if (plant.location.city) {
+            try {
+              const query = [plant.location.city, plant.location.state, plant.location.country]
+                .filter(Boolean)
+                .join(', ');
+
+              console.log(`🌍 Geocoding plant: ${query}`);
+
+              const response = await fetch(
+                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
+                {
+                  headers: { 'User-Agent': 'AyurMap/1.0' }
+                }
+              );
+
+              const data = await response.json();
+              if (data && data.length > 0) {
+                plantLat = parseFloat(data[0].lat);
+                plantLng = parseFloat(data[0].lon);
+                console.log(`✅ Geocoded plant to: ${plantLat}, ${plantLng}`);
+
+                // Update plant in database for future queries
+                await Plant.findByIdAndUpdate(plant._id, {
+                  'location.latitude': plantLat,
+                  'location.longitude': plantLng
+                });
+              }
+            } catch (error) {
+              console.error(`❌ Geocoding failed for plant ${plant._id}:`, error);
+            }
+          }
+        }
+
+        // Only calculate distance if we have valid coordinates
+        if (plantLat !== 0 && plantLng !== 0) {
+          distance = calculateDistance(
+            parseFloat(latitude), parseFloat(longitude),
+            plantLat, plantLng
+          );
+
+          if (distance <= radius) {
+            nearbyPlants.push({
+              ...plant.toObject(),
+              distance: Math.round(distance * 100) / 100
+            });
+          }
+        }
+      }
 
       // Sort by distance
       nearbyPlants.sort((a, b) => a.distance - b.distance);
@@ -281,7 +336,7 @@ router.get('/plants-nearby',
 // @access  Private (User)
 router.get('/plants/:id', authenticateUser, consumerOrFarmer, async (req, res) => {
   try {
-    const plant = await Plant.findById(req.params.id).select('-plantIdResponse -groqResponse');
+    const plant = await Plant.findById(req.params.id).select('-plantIdResponse -groqResponse -imagePath');
 
     if (!plant || !plant.isActive) {
       return res.status(404).json({
@@ -521,6 +576,53 @@ router.put('/profile',
     }
   }
 );
+
+// @route   GET /api/user/popular-plants
+// @desc    Get popular plant names for suggestions
+// @access  Private (User)
+router.get('/popular-plants', authenticateUser, consumerOrFarmer, async (req, res) => {
+  try {
+    const { limit = 10 } = req.query;
+
+    // Get the most viewed plants - prioritize naturalName (common name)
+    const popularPlants = await Plant.find({
+      isActive: true,
+      naturalName: { $exists: true, $ne: '' } // Only plants with natural names
+    })
+      .select('naturalName commonNames')
+      .sort({ viewCount: -1 })
+      .limit(parseInt(limit));
+
+    // Extract plant names - use naturalName (common name) first, then commonNames
+    const plantNames = [];
+    popularPlants.forEach(plant => {
+      if (plant.naturalName && !plantNames.includes(plant.naturalName)) {
+        plantNames.push(plant.naturalName);
+      }
+      // Add common names if naturalName isn't available
+      if (plant.commonNames && Array.isArray(plant.commonNames)) {
+        plant.commonNames.forEach(name => {
+          if (name && !plantNames.includes(name)) {
+            plantNames.push(name);
+          }
+        });
+      }
+    });
+
+    res.json({
+      status: 'success',
+      data: {
+        plants: plantNames.slice(0, parseInt(limit)) // Limit final results
+      }
+    });
+  } catch (error) {
+    console.error('Get popular plants error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch popular plants'
+    });
+  }
+});
 
 // Helper function to calculate distance between two coordinates
 function calculateDistance(lat1, lon1, lat2, lon2) {
