@@ -27,6 +27,8 @@ export const API_ENDPOINTS = {
   CHAT_DETAILS: '/api/chat',
   CHAT_MESSAGES: '/api/chat',
   CHAT_FARMER_CHATS: '/api/chat/farmer/my-chats',
+  CHAT_USER_CHATS: '/api/chat/user/my-chats',
+  CHAT_ADMIN_CHATS: '/api/chat/admin/all-chats',
 
   // Admin endpoints
   ADMIN_USERS: '/api/admin/users',

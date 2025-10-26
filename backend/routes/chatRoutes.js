@@ -335,6 +335,92 @@ router.post('/:chatId/report',
   }
 );
 
+// @route   GET /api/chat/user/my-chats
+// @desc    Get consumer's active chats
+// @access  Private (Consumer)
+router.get('/user/my-chats',
+  authenticateUser,
+  consumerOrFarmer,
+  async (req, res) => {
+    try {
+      const chats = await Chat.find({
+        userId: req.user._id,
+        isActive: true
+      })
+        .populate('plantId', 'naturalName scientificName imageUrl')
+        .populate('farmerId', 'firstName lastName email')
+        .sort({ lastMessageAt: -1 });
+
+      res.json({
+        status: 'success',
+        data: chats
+      });
+    } catch (error) {
+      console.error('Get user chats error:', error);
+      res.status(500).json({
+        status: 'error',
+        message: 'Failed to fetch chats'
+      });
+    }
+  }
+);
+
+// @route   GET /api/chat/admin/all-chats
+// @desc    Get all chats for admin monitoring
+// @access  Private (Admin)
+router.get('/admin/all-chats',
+  authenticateUser,
+  async (req, res) => {
+    try {
+      // Check if user is admin
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({
+          status: 'error',
+          message: 'Access denied. Admin only.'
+        });
+      }
+
+      const { page = 1, limit = 50, reported = false } = req.query;
+      const skip = (page - 1) * limit;
+
+      // Build query
+      const query = { isActive: true };
+      if (reported === 'true') {
+        query.isReported = true;
+      }
+
+      const chats = await Chat.find(query)
+        .populate('plantId', 'naturalName scientificName imageUrl')
+        .populate('farmerId', 'firstName lastName email')
+        .populate('userId', 'firstName lastName email')
+        .sort({ lastMessageAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit));
+
+      const total = await Chat.countDocuments(query);
+
+      res.json({
+        status: 'success',
+        data: {
+          chats,
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total,
+            pages: Math.ceil(total / limit)
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Get admin chats error:', error);
+      res.status(500).json({
+        status: 'error',
+        message: 'Failed to fetch chats'
+      });
+    }
+  }
+);
+
 // @route   GET /api/chat/farmer/my-chats
 // @desc    Get farmer's active chats
 // @access  Private (Farmer)

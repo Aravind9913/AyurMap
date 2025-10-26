@@ -3,6 +3,7 @@ import { useUser, useClerk, SignInButton, useAuth } from "@clerk/clerk-react";
 import L from "leaflet";
 import { API_CONFIG, API_ENDPOINTS, buildApiUrl, apiCall } from "@/lib/api";
 import ReactMarkdown from "react-markdown";
+import ChatContainer from "@/components/ChatContainer";
 
 type Plant = {
   id: string;
@@ -18,7 +19,6 @@ type Plant = {
   confidence?: number;
 };
 
-type Message = { id: string; sender: string; text: string; createdAt?: string };
 
 export default function User() {
   const { user } = useUser();
@@ -31,8 +31,6 @@ export default function User() {
   const [query, setQuery] = useState("");
   const [plants, setPlants] = useState<Plant[]>([]);
   const [selectedPlant, setSelectedPlant] = useState<Plant | null>(null);
-  const [chat, setChat] = useState<Message[]>([]);
-  const [messageText, setMessageText] = useState("");
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +40,7 @@ export default function User() {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [showChangeLocation, setShowChangeLocation] = useState(false);
   const [popularPlants, setPopularPlants] = useState<string[]>([]);
+  const [activeView, setActiveView] = useState<'map' | 'chats'>('map');
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -411,115 +410,11 @@ export default function User() {
     return () => clearTimeout(id);
   }, [query, user, userLocation]);
 
-  useEffect(() => {
-    let poll: number | undefined;
-    const loadChat = async () => {
-      if (!selectedPlant?.id || !user) {
-        setChat([]);
-        return;
-      }
-
-      try {
-        const token = await getToken({ template: "ayurmap_backend" });
-
-        // First, start a chat if it doesn't exist
-        const startChatUrl = buildApiUrl(API_ENDPOINTS.USER_START_CHAT);
-        const startChatResponse = await apiCall(startChatUrl, {
-          method: 'POST',
-          body: JSON.stringify({ plantId: selectedPlant.id })
-        }, token);
-
-        if (startChatResponse.ok) {
-          const startChatData = await startChatResponse.json();
-          const chatId = startChatData.data.chatId;
-
-          // Then get chat messages
-          const chatUrl = buildApiUrl(`${API_ENDPOINTS.CHAT_DETAILS}/${chatId}`);
-          const chatResponse = await apiCall(chatUrl, { method: 'GET' }, token);
-
-          if (chatResponse.ok) {
-            const chatData = await chatResponse.json();
-            if (chatData.status === 'success') {
-              // Transform backend messages to frontend format
-              const transformedMessages = chatData.data.messages.map((msg: any) => ({
-                id: msg._id,
-                sender: msg.senderEmail,
-                text: msg.message,
-                createdAt: new Date(msg.timestamp).toLocaleString()
-              }));
-              setChat(transformedMessages);
-            }
-          }
-        }
-      } catch (err) {
-        console.error('Error loading chat:', err);
-      }
-    };
-
-    loadChat();
-    poll = window.setInterval(loadChat, 3000);
-    return () => {
-      if (poll) clearInterval(poll);
-    };
-  }, [selectedPlant, user]);
-
-  async function sendMessage() {
-    if (!selectedPlant?.id || !user || !messageText.trim()) return;
-
-    try {
-      const token = await getToken({ template: "ayurmap_backend" });
-
-      // First, start a chat if it doesn't exist
-      const startChatUrl = buildApiUrl(API_ENDPOINTS.USER_START_CHAT);
-      const startChatResponse = await apiCall(startChatUrl, {
-        method: 'POST',
-        body: JSON.stringify({ plantId: selectedPlant.id })
-      }, token);
-
-      if (startChatResponse.ok) {
-        const startChatData = await startChatResponse.json();
-        const chatId = startChatData.data.chatId;
-
-        // Send the message
-        const messageUrl = buildApiUrl(`${API_ENDPOINTS.CHAT_MESSAGES}/${chatId}/messages`);
-        const messageResponse = await apiCall(messageUrl, {
-          method: 'POST',
-          body: JSON.stringify({
-            message: messageText,
-            messageType: 'text'
-          })
-        }, token);
-
-        if (messageResponse.ok) {
-          setMessageText("");
-          // Refresh chat messages
-          const chatUrl = buildApiUrl(`${API_ENDPOINTS.CHAT_DETAILS}/${chatId}`);
-          const chatResponse = await apiCall(chatUrl, { method: 'GET' }, token);
-
-          if (chatResponse.ok) {
-            const chatData = await chatResponse.json();
-            if (chatData.status === 'success') {
-              const transformedMessages = chatData.data.messages.map((msg: any) => ({
-                id: msg._id,
-                sender: msg.senderEmail,
-                text: msg.message,
-                createdAt: new Date(msg.timestamp).toLocaleString()
-              }));
-              setChat(transformedMessages);
-            }
-          }
-        }
-      }
-    } catch (err) {
-      console.error('Error sending message:', err);
-    }
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="text-xl font-semibold text-gray-900">AyurMap</div>
             </div>
@@ -537,246 +432,252 @@ export default function User() {
               )}
             </div>
           </div>
+          <div className="flex gap-4 border-b border-gray-200">
+            <button
+              onClick={() => setActiveView('map')}
+              className={`px-4 py-2 text-sm font-medium transition ${activeView === 'map'
+                  ? 'text-emerald-600 border-b-2 border-emerald-600'
+                  : 'text-gray-500 hover:text-gray-900'
+                }`}
+            >
+              Explore Plants
+            </button>
+            <button
+              onClick={() => setActiveView('chats')}
+              className={`px-4 py-2 text-sm font-medium transition ${activeView === 'chats'
+                  ? 'text-emerald-600 border-b-2 border-emerald-600'
+                  : 'text-gray-500 hover:text-gray-900'
+                }`}
+            >
+              My Chats
+            </button>
+          </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <section className="lg:col-span-1 space-y-4">
-            <div className="bg-white rounded-lg p-4 border border-gray-200">
-              <label className="block text-sm font-medium text-gray-900 mb-2">Search Plants</label>
-              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by plant, disease, or health condition" className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" />
-              <div className="mt-3 flex flex-wrap gap-2">
-                {popularPlants.map((t) => (
-                  <button key={t} onClick={() => setQuery(t)} className="rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-700 hover:bg-gray-200 transition">{t}</button>
-                ))}
-              </div>
-
-              <div className="mt-4">
-                <h3 className="text-sm font-medium text-gray-900 mb-2">
-                  Results {plants.length > 0 && <span className="text-gray-500">({plants.length})</span>}
-                </h3>
-                {loading && <div className="text-sm text-gray-500 mb-2">Loading...</div>}
-                {error && <div className="text-sm text-red-600 mb-2">{error}</div>}
-                {plants.length === 0 && !loading && !error && (
-                  <div className="text-sm text-gray-500 text-center py-8">
-                    {query ? 'No plants found for your search.' : 'No plants found within 50km.'}
-                  </div>
-                )}
-                <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
-                  {plants.map((p) => (
-                    <div key={p.id} className="p-3 rounded-lg hover:bg-gray-50 transition cursor-pointer flex gap-3 border border-gray-200" onClick={() => setSelectedPlant(p)}>
-                      <img src={p.image || "/placeholder.svg"} className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <div className="font-medium text-gray-900 text-sm">{p.name}</div>
-                        <div className="text-xs text-gray-500 line-clamp-2 mt-1">{p.description}</div>
-                      </div>
-                    </div>
+        {activeView === 'chats' ? (
+          <div className="h-[calc(100vh-200px)]">
+            <ChatContainer role="consumer" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <section className="lg:col-span-1 space-y-4">
+              <div className="bg-white rounded-lg p-4 border border-gray-200">
+                <label className="block text-sm font-medium text-gray-900 mb-2">Search Plants</label>
+                <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by plant, disease, or health condition" className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" />
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {popularPlants.map((t) => (
+                    <button key={t} onClick={() => setQuery(t)} className="rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-700 hover:bg-gray-200 transition">{t}</button>
                   ))}
                 </div>
-              </div>
-            </div>
 
-            {/* City Input Field - Shown when GPS is not available or user wants to change location */}
-            {showCityInput && (
-              <div className="bg-white rounded-lg p-4 border border-gray-200">
-                <h4 className="font-medium text-gray-900 mb-2">Enter Your City</h4>
-                <p className="text-xs text-gray-500 mb-3">
-                  We need your location to show nearby plants.
-                </p>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={cityInput}
-                    onChange={(e) => setCityInput(e.target.value)}
-                    placeholder="Enter city name"
-                    className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && cityInput.trim() && !geocodingCity) {
-                        geocodeCity(cityInput);
-                      }
-                    }}
-                  />
-                  <button
-                    onClick={async () => {
-                      if (cityInput.trim() && !geocodingCity) {
-                        await geocodeCity(cityInput);
-                      }
-                    }}
-                    disabled={geocodingCity || !cityInput.trim()}
-                    className="rounded-lg bg-emerald-600 px-4 py-2 text-sm text-white disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap hover:bg-emerald-700 transition"
-                  >
-                    {geocodingCity ? 'Finding...' : 'Search'}
-                  </button>
-                </div>
-                {locationError && <div className="text-xs text-red-600 mt-2">{locationError}</div>}
-              </div>
-            )}
-
-            {/* Current Location Display - Shown when location is available and not changing */}
-            {!showCityInput && !showChangeLocation && userLocation && (
-              <div className="bg-white rounded-lg p-4 border border-gray-200">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium text-gray-900">Your Location</h4>
-                  <button
-                    onClick={() => {
-                      setShowChangeLocation(true);
-                      setCityInput("");
-                      setLocationError(null);
-                    }}
-                    className="text-xs text-gray-600 hover:text-gray-900"
-                  >
-                    Change
-                  </button>
-                </div>
-                <div className="text-sm text-gray-600">{userLocation.lat.toFixed(4)}, {userLocation.lng.toFixed(4)}</div>
-              </div>
-            )}
-
-            {/* Change Location Input */}
-            {showChangeLocation && (
-              <div className="bg-white rounded-lg p-4 border border-gray-200">
-                <h4 className="font-medium text-gray-900 mb-3">Change Location</h4>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={cityInput}
-                    onChange={(e) => setCityInput(e.target.value)}
-                    placeholder="Enter city name"
-                    className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && cityInput.trim() && !geocodingCity) {
-                        geocodeCity(cityInput);
-                      }
-                    }}
-                  />
-                  <button
-                    onClick={() => {
-                      setShowChangeLocation(false);
-                      setCityInput("");
-                    }}
-                    className="rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-700 whitespace-nowrap hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={async () => {
-                      if (cityInput.trim() && !geocodingCity) {
-                        await geocodeCity(cityInput);
-                        setShowChangeLocation(false);
-                      }
-                    }}
-                    disabled={geocodingCity || !cityInput.trim()}
-                    className="rounded-lg bg-emerald-600 px-4 py-2 text-sm text-white disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap hover:bg-emerald-700"
-                  >
-                    {geocodingCity ? 'Finding...' : 'Update'}
-                  </button>
-                </div>
-                {locationError && <div className="text-xs text-red-600 mt-2">{locationError}</div>}
-              </div>
-            )}
-
-            {/* Loading state - when initializing */}
-            {!showCityInput && !userLocation && !showChangeLocation && (
-              <div className="bg-white rounded-lg p-4 border border-gray-200">
-                <h4 className="font-medium text-gray-900">Your Location</h4>
-                <div className="text-sm text-gray-500">Detecting...</div>
-              </div>
-            )}
-          </section>
-
-          <section className="lg:col-span-2 relative">
-            <div className="h-[calc(100vh-120px)] rounded-lg overflow-hidden border border-gray-200 bg-white relative z-0">
-              <div ref={mapRef} style={{ height: "100%" }} className="w-full h-full" />
-            </div>
-
-            <aside className={`transition-transform fixed right-6 top-32 w-full max-w-md h-[calc(100vh-160px)] bg-white rounded-lg shadow-2xl overflow-hidden border border-gray-200 z-50 ${selectedPlant ? "translate-x-0" : "translate-x-[120%]"}`}>
-              {selectedPlant ? (
-                <div className="flex flex-col h-full">
-                  {/* Header with close button */}
-                  <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                    <div className="flex items-center gap-4 flex-1">
-                      <img src={selectedPlant.image || "/placeholder.svg"} className="w-12 h-12 rounded-lg object-cover" />
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-base font-semibold text-gray-900 truncate">{selectedPlant.name}</h3>
-                        <div className="text-xs text-gray-500 truncate">{selectedPlant.scientificName}</div>
-                      </div>
+                <div className="mt-4">
+                  <h3 className="text-sm font-medium text-gray-900 mb-2">
+                    Results {plants.length > 0 && <span className="text-gray-500">({plants.length})</span>}
+                  </h3>
+                  {loading && <div className="text-sm text-gray-500 mb-2">Loading...</div>}
+                  {error && <div className="text-sm text-red-600 mb-2">{error}</div>}
+                  {plants.length === 0 && !loading && !error && (
+                    <div className="text-sm text-gray-500 text-center py-8">
+                      {query ? 'No plants found for your search.' : 'No plants found within 50km.'}
                     </div>
+                  )}
+                  <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
+                    {plants.map((p) => (
+                      <div key={p.id} className="p-3 rounded-lg hover:bg-gray-50 transition cursor-pointer flex gap-3 border border-gray-200" onClick={() => setSelectedPlant(p)}>
+                        <img src={p.image || "/placeholder.svg"} className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium text-gray-900 text-sm">{p.name}</div>
+                          <div className="text-xs text-gray-500 line-clamp-2 mt-1">{p.description}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* City Input Field - Shown when GPS is not available or user wants to change location */}
+              {showCityInput && (
+                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                  <h4 className="font-medium text-gray-900 mb-2">Enter Your City</h4>
+                  <p className="text-xs text-gray-500 mb-3">
+                    We need your location to show nearby plants.
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={cityInput}
+                      onChange={(e) => setCityInput(e.target.value)}
+                      placeholder="Enter city name"
+                      className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && cityInput.trim() && !geocodingCity) {
+                          geocodeCity(cityInput);
+                        }
+                      }}
+                    />
                     <button
-                      onClick={() => setSelectedPlant(null)}
-                      className="flex-shrink-0 p-2 hover:bg-gray-100 rounded-lg transition"
-                      aria-label="Close"
+                      onClick={async () => {
+                        if (cityInput.trim() && !geocodingCity) {
+                          await geocodeCity(cityInput);
+                        }
+                      }}
+                      disabled={geocodingCity || !cityInput.trim()}
+                      className="rounded-lg bg-emerald-600 px-4 py-2 text-sm text-white disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap hover:bg-emerald-700 transition"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
+                      {geocodingCity ? 'Finding...' : 'Search'}
                     </button>
                   </div>
+                  {locationError && <div className="text-xs text-red-600 mt-2">{locationError}</div>}
+                </div>
+              )}
 
-                  {/* Scrollable content */}
-                  <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                    {selectedPlant.description && (
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-2">Description</h4>
-                        <div className="prose prose-sm max-w-none text-sm text-gray-600">
-                          <ReactMarkdown>{selectedPlant.description}</ReactMarkdown>
+              {/* Current Location Display - Shown when location is available and not changing */}
+              {!showCityInput && !showChangeLocation && userLocation && (
+                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-medium text-gray-900">Your Location</h4>
+                    <button
+                      onClick={() => {
+                        setShowChangeLocation(true);
+                        setCityInput("");
+                        setLocationError(null);
+                      }}
+                      className="text-xs text-gray-600 hover:text-gray-900"
+                    >
+                      Change
+                    </button>
+                  </div>
+                  <div className="text-sm text-gray-600">{userLocation.lat.toFixed(4)}, {userLocation.lng.toFixed(4)}</div>
+                </div>
+              )}
+
+              {/* Change Location Input */}
+              {showChangeLocation && (
+                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                  <h4 className="font-medium text-gray-900 mb-3">Change Location</h4>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={cityInput}
+                      onChange={(e) => setCityInput(e.target.value)}
+                      placeholder="Enter city name"
+                      className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && cityInput.trim() && !geocodingCity) {
+                          geocodeCity(cityInput);
+                        }
+                      }}
+                    />
+                    <button
+                      onClick={() => {
+                        setShowChangeLocation(false);
+                        setCityInput("");
+                      }}
+                      className="rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-700 whitespace-nowrap hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (cityInput.trim() && !geocodingCity) {
+                          await geocodeCity(cityInput);
+                          setShowChangeLocation(false);
+                        }
+                      }}
+                      disabled={geocodingCity || !cityInput.trim()}
+                      className="rounded-lg bg-emerald-600 px-4 py-2 text-sm text-white disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap hover:bg-emerald-700"
+                    >
+                      {geocodingCity ? 'Finding...' : 'Update'}
+                    </button>
+                  </div>
+                  {locationError && <div className="text-xs text-red-600 mt-2">{locationError}</div>}
+                </div>
+              )}
+
+              {/* Loading state - when initializing */}
+              {!showCityInput && !userLocation && !showChangeLocation && (
+                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                  <h4 className="font-medium text-gray-900">Your Location</h4>
+                  <div className="text-sm text-gray-500">Detecting...</div>
+                </div>
+              )}
+            </section>
+
+            <section className="lg:col-span-2 relative">
+              <div className="h-[calc(100vh-120px)] rounded-lg overflow-hidden border border-gray-200 bg-white relative z-0">
+                <div ref={mapRef} style={{ height: "100%" }} className="w-full h-full" />
+              </div>
+
+              <aside className={`transition-transform fixed right-6 top-32 w-full max-w-md h-[calc(100vh-160px)] bg-white rounded-lg shadow-2xl overflow-hidden border border-gray-200 z-50 ${selectedPlant ? "translate-x-0" : "translate-x-[120%]"}`}>
+                {selectedPlant ? (
+                  <div className="flex flex-col h-full">
+                    {/* Header with close button */}
+                    <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                      <div className="flex items-center gap-4 flex-1">
+                        <img src={selectedPlant.image || "/placeholder.svg"} className="w-12 h-12 rounded-lg object-cover" />
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-base font-semibold text-gray-900 truncate">{selectedPlant.name}</h3>
+                          <div className="text-xs text-gray-500 truncate">{selectedPlant.scientificName}</div>
                         </div>
                       </div>
-                    )}
+                      <button
+                        onClick={() => setSelectedPlant(null)}
+                        className="flex-shrink-0 p-2 hover:bg-gray-100 rounded-lg transition"
+                        aria-label="Close"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
 
-                    {selectedPlant.medicinalUses && (
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-2">Medicinal Uses</h4>
-                        <div className="prose prose-sm max-w-none text-sm text-gray-600">
-                          <ReactMarkdown>{selectedPlant.medicinalUses}</ReactMarkdown>
+                    {/* Scrollable content */}
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                      {selectedPlant.description && (
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-900 mb-2">Description</h4>
+                          <div className="prose prose-sm max-w-none text-sm text-gray-600">
+                            <ReactMarkdown>{selectedPlant.description}</ReactMarkdown>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {selectedPlant.farmerName && (
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-1">Farmer</h4>
-                        <p className="text-sm text-gray-600">{selectedPlant.farmerName}</p>
-                      </div>
-                    )}
-
-                    <div className="border-t border-gray-200 pt-4">
-                      <h4 className="text-sm font-medium text-gray-900 mb-3">Chat with Farmer</h4>
-
-                      <div className="flex flex-col" style={{ height: '300px' }}>
-                        <div className="flex-1 overflow-y-auto space-y-2 pr-2 mb-3">
-                          {chat.map((m) => (
-                            <div key={m.id} className={`max-w-[80%] p-2 rounded-lg ${m.sender === (user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses?.[0]?.emailAddress) ? "ml-auto bg-emerald-600 text-white" : "bg-gray-100 text-gray-900"}`}>
-                              <div className="text-sm">{m.text}</div>
-                              <div className="text-xs opacity-70 mt-1">{m.createdAt}</div>
-                            </div>
-                          ))}
+                      {selectedPlant.medicinalUses && (
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-900 mb-2">Medicinal Uses</h4>
+                          <div className="prose prose-sm max-w-none text-sm text-gray-600">
+                            <ReactMarkdown>{selectedPlant.medicinalUses}</ReactMarkdown>
+                          </div>
                         </div>
+                      )}
 
-                        <div className="flex gap-2 pt-3 border-t border-gray-200">
-                          <input
-                            value={messageText}
-                            onChange={(e) => setMessageText(e.target.value)}
-                            placeholder="Message farmer..."
-                            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                          />
-                          <button
-                            onClick={sendMessage}
-                            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm text-white hover:bg-emerald-700 transition"
-                          >
-                            Send
-                          </button>
+                      {selectedPlant.farmerName && (
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-900 mb-1">Farmer</h4>
+                          <p className="text-sm text-gray-600">{selectedPlant.farmerName}</p>
                         </div>
+                      )}
+
+                      <div className="border-t border-gray-200 pt-4">
+                        <h4 className="text-sm font-medium text-gray-900 mb-3">Chat with Farmer</h4>
+                        <button
+                          onClick={() => setActiveView('chats')}
+                          className="w-full px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition text-sm font-medium"
+                        >
+                          Open Chat
+                        </button>
                       </div>
                     </div>
                   </div>
-                </div>
-              ) : (
-                <div className="text-center text-gray-500 mt-20 p-6">Select a plant to see details</div>
-              )}
-            </aside>
-          </section>
-        </div>
+                ) : (
+                  <div className="text-center text-gray-500 mt-20 p-6">Select a plant to see details</div>
+                )}
+              </aside>
+            </section>
+          </div>
+        )}
       </main>
     </div>
   );
