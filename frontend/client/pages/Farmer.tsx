@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { usePlants, useRecognizePlant, useSavePlant, useDeletePlant, useProcessedPlantsForMap } from "@/hooks/usePlants";
 
 // AuthenticatedImage component that adds auth token to image requests
 function AuthenticatedImage({ plantId, alt, className }: { plantId: string; alt: string; className?: string }) {
@@ -101,6 +102,15 @@ export default function Farmer() {
   const { signOut } = useClerk();
   const navigate = useNavigate();
 
+  // React Query hooks
+  const { data: plantsData, isLoading: loadingPlants } = usePlants();
+  const recognizeMutation = useRecognizePlant();
+  const saveMutation = useSavePlant();
+  const deleteMutation = useDeletePlant();
+
+  // Extract plants from the query response
+  const myPlants = plantsData?.data?.plants || [];
+
   useEffect(() => {
     if (!isSignedIn) {
       navigate("/", { replace: true });
@@ -113,10 +123,7 @@ export default function Farmer() {
   const [recognizing, setRecognizing] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [plantData, setPlantData] = useState<PlantData | null>(null);
-  const [saving, setSaving] = useState(false);
   const [savedNotification, setSavedNotification] = useState(false);
-  const [myPlants, setMyPlants] = useState<any[]>([]);
-  const [loadingPlants, setLoadingPlants] = useState(false);
   const [selectedPlant, setSelectedPlant] = useState<any | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [plantToDelete, setPlantToDelete] = useState<string | null>(null);
@@ -142,38 +149,7 @@ export default function Farmer() {
     setStatusMessage("🔍 Recognizing plant...");
 
     try {
-      const token = await getToken();
-      if (!token) {
-        setStatusMessage("❌ Authentication required");
-        setRecognizing(false);
-        return;
-      }
-
-      const fd = new FormData();
-      fd.append("plantImage", f);
-
-      const res = await fetch("http://localhost:5000/api/farmer/recognize-plant", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        },
-        body: fd
-      });
-
-      if (!res.ok) {
-        let errText = "❌ Plant recognition failed";
-        try {
-          const data = await res.json();
-          errText = data.message || data.error || JSON.stringify(data);
-        } catch (e) {
-          errText = await res.text() || "❌ Plant recognition failed";
-        }
-        setStatusMessage(errText);
-        setRecognizing(false);
-        return;
-      }
-
-      const data = await res.json();
+      const data = await recognizeMutation.mutateAsync(f);
 
       if (data.status === 'success') {
         setPlantData(data.data);
@@ -181,9 +157,9 @@ export default function Farmer() {
       } else {
         setStatusMessage("🌱 Could not identify this plant. Please try another image.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setStatusMessage("❌ Plant recognition failed");
+      setStatusMessage(err.message || "❌ Plant recognition failed");
     } finally {
       setRecognizing(false);
     }
@@ -192,107 +168,32 @@ export default function Farmer() {
   async function handleSave(formData?: any) {
     if (!plantData) return;
 
-    setSaving(true);
     setStatusMessage("💾 Saving to database...");
 
     try {
-      const token = await getToken();
-      if (!token) {
-        setStatusMessage("❌ Authentication required");
-        setSaving(false);
-        return;
-      }
-
       const saveData = {
         ...plantData,
         ...formData
       };
 
-      const res = await fetch("http://localhost:5000/api/farmer/save-plant", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify(saveData),
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        setStatusMessage(`❌ Save failed: ${error.message}`);
-        setSaving(false);
-        return;
-      }
+      await saveMutation.mutateAsync(saveData);
 
       setStatusMessage("✅ Plant saved successfully!");
       setSavedNotification(true);
       setShowSaveForm(false);
       setTimeout(() => setSavedNotification(false), 3000);
-      fetchMyPlants();
 
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setStatusMessage("❌ Failed to save plant");
-    } finally {
-      setSaving(false);
+      setStatusMessage(`❌ Failed to save plant: ${err.message || 'Unknown error'}`);
     }
   }
-
-  async function fetchMyPlants() {
-    setLoadingPlants(true);
-    try {
-      const token = await getToken();
-      if (!token) {
-        setLoadingPlants(false);
-        return;
-      }
-
-      const res = await fetch("http://localhost:5000/api/farmer/my-plants", {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-
-      if (!res.ok) {
-        console.error("Failed to fetch plants");
-        setLoadingPlants(false);
-        return;
-      }
-
-      const data = await res.json();
-      if (data.status === 'success' && data.data?.plants) {
-        setMyPlants(data.data.plants);
-      }
-    } catch (err) {
-      console.error("Error fetching plants:", err);
-    } finally {
-      setLoadingPlants(false);
-    }
-  }
-
-  useEffect(() => {
-    if (isSignedIn && (activeView === 'gallery' || activeView === 'map')) {
-      fetchMyPlants();
-    }
-  }, [activeView, isSignedIn]);
 
   async function handleDeletePlant(plantId: string) {
     try {
-      const token = await getToken();
-      if (!token) return;
-
-      const res = await fetch(`http://localhost:5000/api/farmer/plants/${plantId}`, {
-        method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-
-      if (res.ok) {
-        setMyPlants(myPlants.filter(p => p._id !== plantId));
-        setSelectedPlant(null);
-        setDeleteConfirmOpen(false);
-      }
+      await deleteMutation.mutateAsync(plantId);
+      setSelectedPlant(null);
+      setDeleteConfirmOpen(false);
     } catch (err) {
       console.error("Delete error:", err);
     }
@@ -380,7 +281,7 @@ export default function Farmer() {
               recognizing={recognizing}
               statusMessage={statusMessage}
               plantData={plantData}
-              saving={saving}
+              isSaving={saveMutation.isPending}
               savedNotification={savedNotification}
               handleFileUpload={handleFileUpload}
               handleSave={handleSave}
@@ -594,7 +495,7 @@ export default function Farmer() {
         open={showSaveForm}
         onOpenChange={setShowSaveForm}
         user={user}
-        saving={saving}
+        saving={saveMutation.isPending}
         onSave={handleSave}
       />
     </div>
@@ -606,7 +507,7 @@ function AddNewPlantView({
   recognizing,
   statusMessage,
   plantData,
-  saving,
+  isSaving,
   savedNotification,
   handleFileUpload,
   handleSave,
@@ -668,13 +569,13 @@ function AddNewPlantView({
             </h3>
             <button
               onClick={() => setShowSaveForm(true)}
-              disabled={saving || savedNotification}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all ${saving || savedNotification
+              disabled={isSaving || savedNotification}
+              className={`px-6 py-3 rounded-lg font-semibold transition-all ${isSaving || savedNotification
                 ? 'bg-emerald-400 text-white cursor-not-allowed'
                 : 'bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-lg'
                 }`}
             >
-              {saving ? '💾 Saving...' : savedNotification ? '✅ Saved!' : '💾 Save to Database'}
+              {isSaving ? '💾 Saving...' : savedNotification ? '✅ Saved!' : '💾 Save to Database'}
             </button>
           </div>
 
@@ -1255,9 +1156,10 @@ function PlantMapView({ myPlants, loadingPlants, setSelectedPlant }: any) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
-  const [processedPlants, setProcessedPlants] = useState<any[]>([]);
-  const [geocodingPlants, setGeocodingPlants] = useState(false);
   const [mapReady, setMapReady] = useState(false);
+
+  // Use React Query to cache processed plants for map
+  const { data: processedPlants = [], isLoading: geocodingPlants } = useProcessedPlantsForMap(myPlants);
 
   // Initialize map when component mounts and container is ready
   useEffect(() => {
@@ -1320,75 +1222,6 @@ function PlantMapView({ myPlants, loadingPlants, setSelectedPlant }: any) {
       }
     };
   }, []);
-
-  // Process plants for geocoding
-  useEffect(() => {
-    async function processPlantsForMap() {
-      if (!myPlants || myPlants.length === 0) {
-        setProcessedPlants([]);
-        setGeocodingPlants(false);
-        return;
-      }
-
-      setGeocodingPlants(true);
-
-      const processed = await Promise.all(
-        myPlants.map(async (plant: any) => {
-          if (plant.location?.latitude &&
-            plant.location?.longitude &&
-            plant.location.latitude !== 0 &&
-            plant.location.longitude !== 0) {
-            return {
-              ...plant,
-              displayLat: plant.location.latitude,
-              displayLng: plant.location.longitude,
-              locationType: 'gps',
-              locationSource: 'GPS coordinates'
-            };
-          }
-
-          if (plant.location?.city && plant.location?.country) {
-            try {
-              const query = [plant.location.city, plant.location.state, plant.location.country]
-                .filter(Boolean)
-                .join(', ');
-
-              const response = await fetch(
-                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
-                {
-                  headers: {
-                    'User-Agent': 'AyurMap/1.0'
-                  }
-                }
-              );
-
-              const data = await response.json();
-
-              if (data && data.length > 0) {
-                return {
-                  ...plant,
-                  displayLat: parseFloat(data[0].lat),
-                  displayLng: parseFloat(data[0].lon),
-                  locationType: 'geocoded',
-                  locationSource: `Approximate location: ${query}`
-                };
-              }
-            } catch (error) {
-              console.error('Geocoding failed for:', plant.naturalName, error);
-            }
-          }
-
-          return null;
-        })
-      );
-
-      const validPlants = processed.filter(p => p !== null);
-      setProcessedPlants(validPlants);
-      setGeocodingPlants(false);
-    }
-
-    processPlantsForMap();
-  }, [myPlants]);
 
   // Add markers to map
   useEffect(() => {

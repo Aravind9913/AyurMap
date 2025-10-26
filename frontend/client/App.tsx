@@ -13,7 +13,16 @@ import Farmer from "./pages/Farmer";
 import User from "./pages/User";
 import { ClerkProvider } from "@clerk/clerk-react";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+      gcTime: 10 * 60 * 1000, // Keep unused data in cache for 10 minutes (formerly cacheTime)
+      refetchOnWindowFocus: false, // Don't refetch on window focus
+      retry: 1, // Retry failed requests once
+    },
+  },
+});
 const clerkPk = (import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string) || "pk_test_Y2xpbWJpbmctbWFybW90LTE4LmNsZXJrLmFjY291bnRzLmRldiQ";
 
 const App = () => (
