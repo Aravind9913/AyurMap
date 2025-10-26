@@ -49,22 +49,18 @@ export default function ChatContainer({ role, showReportedOnly = false }: ChatCo
                 className={`${showMobileChat ? 'flex' : 'hidden'
                     } lg:flex flex-1 relative`}
             >
-                {selectedChat && (
-                    <>
-                        <ChatWindow
-                            chat={selectedChat}
-                            role={role}
-                            onBack={() => setShowMobileChat(false)}
-                        />
-                        {showMobileChat && (
-                            <button
-                                onClick={() => setShowMobileChat(false)}
-                                className="absolute top-4 left-4 lg:hidden z-10 p-2 bg-white rounded-lg shadow-md hover:bg-gray-50"
-                            >
-                                ←
-                            </button>
-                        )}
-                    </>
+                <ChatWindow
+                    chat={selectedChat}
+                    role={role}
+                    onBack={() => setShowMobileChat(false)}
+                />
+                {selectedChat && showMobileChat && (
+                    <button
+                        onClick={() => setShowMobileChat(false)}
+                        className="absolute top-4 left-4 lg:hidden z-10 p-2 bg-white rounded-lg shadow-md hover:bg-gray-50"
+                    >
+                        ←
+                    </button>
                 )}
             </div>
         </div>

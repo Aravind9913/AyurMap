@@ -4,6 +4,7 @@ import L from "leaflet";
 import { API_CONFIG, API_ENDPOINTS, buildApiUrl, apiCall } from "@/lib/api";
 import ReactMarkdown from "react-markdown";
 import ChatContainer from "@/components/ChatContainer";
+import { toast } from "sonner";
 
 type Plant = {
   id: string;
@@ -41,6 +42,38 @@ export default function User() {
   const [showChangeLocation, setShowChangeLocation] = useState(false);
   const [popularPlants, setPopularPlants] = useState<string[]>([]);
   const [activeView, setActiveView] = useState<'map' | 'chats'>('map');
+  const [initiatingChat, setInitiatingChat] = useState(false);
+
+  // Function to start a chat with the farmer
+  async function startChatWithFarmer() {
+    if (!selectedPlant?.id || !user || initiatingChat) return;
+
+    try {
+      setInitiatingChat(true);
+      const token = await getToken({ template: "ayurmap_backend" });
+
+      // Start a chat for this plant
+      const startChatUrl = buildApiUrl(API_ENDPOINTS.USER_START_CHAT);
+      const response = await apiCall(startChatUrl, {
+        method: 'POST',
+        body: JSON.stringify({ plantId: selectedPlant.id })
+      }, token);
+
+      if (response.ok) {
+        // Navigate to chats tab
+        setActiveView('chats');
+        toast.success('Chat opened successfully!');
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.message || 'Failed to start chat');
+      }
+    } catch (error) {
+      console.error('Error starting chat:', error);
+      toast.error('Failed to start chat');
+    } finally {
+      setInitiatingChat(false);
+    }
+  }
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -436,8 +469,8 @@ export default function User() {
             <button
               onClick={() => setActiveView('map')}
               className={`px-4 py-2 text-sm font-medium transition ${activeView === 'map'
-                  ? 'text-emerald-600 border-b-2 border-emerald-600'
-                  : 'text-gray-500 hover:text-gray-900'
+                ? 'text-emerald-600 border-b-2 border-emerald-600'
+                : 'text-gray-500 hover:text-gray-900'
                 }`}
             >
               Explore Plants
@@ -445,8 +478,8 @@ export default function User() {
             <button
               onClick={() => setActiveView('chats')}
               className={`px-4 py-2 text-sm font-medium transition ${activeView === 'chats'
-                  ? 'text-emerald-600 border-b-2 border-emerald-600'
-                  : 'text-gray-500 hover:text-gray-900'
+                ? 'text-emerald-600 border-b-2 border-emerald-600'
+                : 'text-gray-500 hover:text-gray-900'
                 }`}
             >
               My Chats
@@ -663,10 +696,11 @@ export default function User() {
                       <div className="border-t border-gray-200 pt-4">
                         <h4 className="text-sm font-medium text-gray-900 mb-3">Chat with Farmer</h4>
                         <button
-                          onClick={() => setActiveView('chats')}
-                          className="w-full px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition text-sm font-medium"
+                          onClick={startChatWithFarmer}
+                          disabled={initiatingChat}
+                          className="w-full px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          Open Chat
+                          {initiatingChat ? 'Starting...' : 'Open Chat'}
                         </button>
                       </div>
                     </div>

@@ -50,7 +50,7 @@ export default function ChatWindow({ chat, role, onBack }: ChatWindowProps) {
 
     const handleSendMessage = async (e?: React.FormEvent) => {
         e?.preventDefault();
-        if (!messageText.trim() || !chat || role === 'admin') return;
+        if (!messageText.trim() || !chat || role === 'admin' || !chat._id) return;
 
         try {
             setIsSending(true);
@@ -84,10 +84,15 @@ export default function ChatWindow({ chat, role, onBack }: ChatWindowProps) {
 
     if (!chat) {
         return (
-            <div className="flex items-center justify-center h-full bg-gray-50">
-                <div className="text-center">
-                    <div className="text-6xl mb-4">💬</div>
-                    <p className="text-gray-500 text-lg">Select a chat to start messaging</p>
+            <div className="flex items-center justify-center h-full w-full bg-gradient-to-br from-gray-50 via-emerald-50/30 to-gray-50">
+                <div className="text-center max-w-md px-6">
+                    <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-emerald-100 to-emerald-200 flex items-center justify-center shadow-xl">
+                        <svg className="w-12 h-12 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No conversation selected</h3>
+                    <p className="text-sm text-gray-500 leading-relaxed">Choose a conversation from the list to start messaging</p>
                 </div>
             </div>
         );
@@ -96,54 +101,49 @@ export default function ChatWindow({ chat, role, onBack }: ChatWindowProps) {
     const otherParticipant = getOtherParticipant();
 
     return (
-        <div className="flex flex-col h-full">
-            {/* Header */}
-            <div className="p-4 border-b border-gray-200 bg-white">
+        <div className="flex flex-col h-full bg-white w-full">
+            {/* Simple Header */}
+            <div className="p-4 border-b border-gray-200">
                 <div className="flex items-center gap-3">
                     {onBack && (
-                        <button
-                            onClick={onBack}
-                            className="lg:hidden p-2 hover:bg-gray-100 rounded-lg"
-                        >
+                        <button onClick={onBack} className="lg:hidden p-2 hover:bg-gray-100 rounded-lg">
                             ←
                         </button>
                     )}
-                    <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                        {otherParticipant?.firstName ? (
-                            <span className="text-emerald-700 font-semibold">
-                                {otherParticipant.firstName[0]}{otherParticipant.lastName?.[0]}
-                            </span>
-                        ) : (
-                            <span className="text-emerald-700">👤</span>
+                    <div className="relative">
+                        <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden">
+                            <img
+                                src={(otherParticipant as any)?.profileImage || `https://ui-avatars.com/api/?name=${otherParticipant?.firstName}+${otherParticipant?.lastName}&background=10b981&color=fff`}
+                                alt={`${otherParticipant?.firstName} ${otherParticipant?.lastName}`}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    e.currentTarget.src = `https://ui-avatars.com/api/?name=${otherParticipant?.firstName}+${otherParticipant?.lastName}&background=10b981&color=fff`;
+                                }}
+                            />
+                        </div>
+                        {isConnected && (
+                            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
                         )}
                     </div>
                     <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 truncate">
+                        <h3 className="font-medium text-gray-900 truncate">
                             {otherParticipant?.firstName} {otherParticipant?.lastName}
                         </h3>
                         <div className="flex items-center gap-2 text-xs text-gray-500">
-                            {isPolling && <span className="text-amber-600">Polling...</span>}
-                            {isConnected && <span className="text-emerald-600">● Online</span>}
-                            {!isConnected && !isPolling && <span className="text-gray-400">Offline</span>}
+                            {isConnected && <span className="text-emerald-600">Online</span>}
                         </div>
                     </div>
                 </div>
-                {chat.plantId && (
-                    <div className="mt-2 text-sm text-gray-600">
-                        Chat about: <span className="font-medium">{chat.plantName}</span>
-                    </div>
-                )}
             </div>
 
-            {/* Messages */}
+            {/* Messages Area */}
             <div
                 ref={messagesContainerRef}
-                className="flex-1 overflow-y-auto p-4 space-y-2 bg-gray-50"
+                className="flex-1 overflow-y-auto px-4 py-4 bg-gray-50"
             >
                 {messages.length === 0 ? (
                     <div className="text-center text-gray-500 mt-8">
                         <p>No messages yet</p>
-                        <p className="text-sm mt-2">Start the conversation!</p>
                     </div>
                 ) : (
                     messages.map((message, index) => {
@@ -153,34 +153,28 @@ export default function ChatWindow({ chat, role, onBack }: ChatWindowProps) {
                         return (
                             <div
                                 key={message._id || index}
-                                className={`flex gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}
+                                className={`flex gap-3 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}
                             >
                                 {!isMine && showAvatar && (
-                                    <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                                        <span className="text-emerald-700 text-xs font-semibold">
+                                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-md">
+                                        <span className="text-white text-xs font-semibold">
                                             {message.senderName?.charAt(0) || 'U'}
                                         </span>
                                     </div>
                                 )}
-                                {!isMine && !showAvatar && <div className="w-8" />}
+                                {!isMine && !showAvatar && <div className="w-9" />}
 
-                                <div
-                                    className={`max-w-[70%] rounded-lg px-4 py-2 ${isMine
-                                            ? 'bg-emerald-600 text-white'
-                                            : 'bg-white text-gray-900 border border-gray-200'
-                                        }`}
-                                >
-                                    {!isMine && (
-                                        <div className="text-xs font-semibold mb-1 opacity-80">
-                                            {message.senderName}
-                                        </div>
-                                    )}
-                                    <div className="text-sm whitespace-pre-wrap break-words">{message.message}</div>
+                                <div className={`flex flex-col max-w-[75%] ${isMine ? 'items-end' : 'items-start'}`}>
                                     <div
-                                        className={`text-xs mt-1 ${isMine ? 'text-emerald-100' : 'text-gray-500'
+                                        className={`rounded-lg px-3 py-2 ${isMine
+                                            ? 'bg-emerald-500 text-white'
+                                            : 'bg-white text-gray-900 border border-gray-200'
                                             }`}
                                     >
-                                        {formatTime(message.timestamp)}
+                                        <div className="text-sm">{message.message}</div>
+                                        <div className={`text-xs mt-1 ${isMine ? 'text-emerald-100' : 'text-gray-400'}`}>
+                                            {formatTime(message.timestamp)}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -188,13 +182,13 @@ export default function ChatWindow({ chat, role, onBack }: ChatWindowProps) {
                     })
                 )}
                 {isTyping && (
-                    <div className="flex gap-2">
-                        <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                            <span className="text-emerald-700 text-xs font-semibold">
+                    <div className="flex gap-3">
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-md">
+                            <span className="text-white text-xs font-semibold">
                                 {otherParticipant?.firstName?.charAt(0) || 'U'}
                             </span>
                         </div>
-                        <div className="bg-white border border-gray-200 rounded-lg px-4 py-2">
+                        <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-sm px-4 py-2.5 shadow-sm">
                             <div className="flex gap-1">
                                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
                                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
@@ -206,7 +200,7 @@ export default function ChatWindow({ chat, role, onBack }: ChatWindowProps) {
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Input */}
+            {/* Simple Input */}
             {role !== 'admin' && (
                 <div className="p-4 border-t border-gray-200 bg-white">
                     <form onSubmit={handleSendMessage} className="flex gap-2">
@@ -216,12 +210,12 @@ export default function ChatWindow({ chat, role, onBack }: ChatWindowProps) {
                             onChange={(e) => setMessageText(e.target.value)}
                             placeholder="Type a message..."
                             disabled={isSending}
-                            className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
+                            className="flex-1 px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 text-sm"
                         />
                         <button
                             type="submit"
                             disabled={!messageText.trim() || isSending}
-                            className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-6 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition disabled:opacity-50 text-sm font-medium"
                         >
                             {isSending ? 'Sending...' : 'Send'}
                         </button>
@@ -230,13 +224,12 @@ export default function ChatWindow({ chat, role, onBack }: ChatWindowProps) {
             )}
 
             {role === 'admin' && (
-                <div className="p-4 border-t border-gray-200 bg-gray-50">
-                    <div className="text-sm text-gray-500 text-center">
-                        Admin view only - Cannot send messages
-                    </div>
+                <div className="p-4 border-t border-gray-200 bg-gray-50 text-center text-sm text-gray-500">
+                    Read-only mode
                 </div>
             )}
         </div>
     );
 }
+
 
