@@ -158,14 +158,18 @@ export function useChat({ chatId, isAdmin = false }: UseChatOptions) {
                     const data = await response.json();
                     if (data.status === 'success' && data.data) {
                         const chat = data.data;
-                        // Check if someone else is typing
-                        const myEmail = user?.primaryEmailAddress?.emailAddress;
-                        const isFarmer = chat.farmerEmail === myEmail;
-                        const isUser = chat.userEmail === myEmail;
 
-                        // If typing is true and it's not me typing
+                        // Only show typing if someone else is typing
                         if (chat.typing && chat.typingBy) {
-                            setOtherPersonTyping(true);
+                            // Check if it's not me typing
+                            const myEmail = user?.primaryEmailAddress?.emailAddress || '';
+                            const isMeTyping = chat.typingByEmail === myEmail;
+
+                            if (!isMeTyping) {
+                                setOtherPersonTyping(true);
+                            } else {
+                                setOtherPersonTyping(false);
+                            }
                         } else {
                             setOtherPersonTyping(false);
                         }
