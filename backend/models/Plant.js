@@ -97,11 +97,13 @@ const plantSchema = new mongoose.Schema({
   location: {
     latitude: {
       type: Number,
-      required: true
+      required: false,
+      default: 0
     },
     longitude: {
       type: Number,
-      required: true
+      required: false,
+      default: 0
     },
     address: String,
     city: String,
