@@ -57,7 +57,7 @@ export default function Index() {
     setIsNavigating(true);
 
     // Navigate immediately
-    if (email === "aravindsrksrk1399@gmail.com") {
+    if (email === import.meta.env.VITE_ADMIN_EMAIL) {
       navigate("/admin", { replace: true });
       return;
     }
