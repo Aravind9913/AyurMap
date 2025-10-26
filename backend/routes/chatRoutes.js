@@ -421,6 +421,64 @@ router.get('/admin/all-chats',
   }
 );
 
+// @route   POST /api/chat/:chatId/typing
+// @desc    Update typing status
+// @access  Private (User/Farmer)
+router.post('/:chatId/typing',
+  authenticateUser,
+  consumerOrFarmer,
+  async (req, res) => {
+    try {
+      const { typing } = req.body;
+      const chatId = req.params.chatId;
+
+      // Check if user is participant in this chat
+      const chat = await Chat.findById(chatId);
+      if (!chat) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'Chat not found'
+        });
+      }
+
+      // Update typing status in database
+      const role = req.user.role === 'farmer' ? 'farmer' : 'user';
+      const otherRole = role === 'farmer' ? 'user' : 'farmer';
+
+      // Check if someone else is typing
+      const isOthersTyping = chat.typing && chat.typingBy && chat.typingBy.toString() !== req.user._id.toString();
+
+      if (typing) {
+        // User started typing
+        await Chat.findByIdAndUpdate(chatId, {
+          typing: true,
+          typingBy: req.user._id,
+          typingAt: new Date()
+        });
+      } else {
+        // User stopped typing
+        await Chat.findByIdAndUpdate(chatId, {
+          typing: false,
+          typingBy: null,
+          typingAt: null
+        });
+      }
+
+      res.json({
+        status: 'success',
+        message: 'Typing status updated',
+        data: { typing, isOthersTyping }
+      });
+    } catch (error) {
+      console.error('Typing status error:', error);
+      res.status(500).json({
+        status: 'error',
+        message: 'Failed to update typing status'
+      });
+    }
+  }
+);
+
 // @route   GET /api/chat/farmer/my-chats
 // @desc    Get farmer's active chats
 // @access  Private (Farmer)
