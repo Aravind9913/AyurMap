@@ -9,6 +9,7 @@ const User = require('../models/User');
 const { authenticateUser, farmerOrAutoUpgrade, checkOwnership } = require('../middleware/authMiddleware');
 const plantIdService = require('../services/plantIdService');
 const groqService = require('../services/groqService');
+const geocodingService = require('../services/geocodingService');
 
 const router = express.Router();
 
@@ -172,7 +173,11 @@ router.post('/save-plant',
         plantImage,
         imageBase64,
         imageContentType,
-        imageOriginalName
+        imageOriginalName,
+        phoneNumber,
+        firstName,
+        lastName,
+        email
       } = req.body;
 
       if (!name || !scientificName) {
@@ -182,12 +187,65 @@ router.post('/save-plant',
         });
       }
 
-      // Use authenticated user's data
+      // Validate required fields from form
+      if (!phoneNumber || !firstName || !email) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Phone number, first name, and email are required'
+        });
+      }
+
+      // Handle location data
+      let locationData = {
+        latitude: 0,
+        longitude: 0,
+        country: '',
+        state: '',
+        city: '',
+        address: ''
+      };
+
+      const { latitude, longitude, country, state, city } = req.body.location || {};
+
+      if (latitude && longitude) {
+        // GPS coordinates provided - try to reverse geocode for country/state/city
+        console.log('📍 Coordinates provided, attempting reverse geocoding...');
+        locationData.latitude = parseFloat(latitude);
+        locationData.longitude = parseFloat(longitude);
+
+        const geocodeResult = await geocodingService.reverseGeocode(latitude, longitude);
+
+        if (geocodeResult.success && geocodeResult.data) {
+          locationData.country = geocodeResult.data.country || '';
+          locationData.state = geocodeResult.data.state || '';
+          locationData.city = geocodeResult.data.city || '';
+          locationData.address = geocodeResult.data.address || '';
+          console.log('✅ Successfully geocoded location');
+        } else {
+          console.warn('⚠️ Geocoding failed, using manual entry or defaults');
+          // Fallback: use manual entry fields if provided, or keep empty
+          locationData.country = country || '';
+          locationData.state = state || '';
+          locationData.city = city || '';
+        }
+      } else if (country && state && city) {
+        // Manual location entry
+        console.log('📍 Manual location entry provided');
+        locationData.country = country;
+        locationData.state = state;
+        locationData.city = city;
+        locationData.latitude = 0;
+        locationData.longitude = 0;
+      } else {
+        console.warn('⚠️ No location data provided, using defaults');
+      }
+
+      // Use form data for farmer info (from Clerk)
       const plantRecord = {
         farmerId: req.user._id,
-        farmerEmail: req.user.email,
-        farmerName: `${req.user.firstName} ${req.user.lastName}`,
-        farmerPhone: req.user.phoneNumber || '',
+        farmerEmail: email || req.user.email,
+        farmerName: lastName ? `${firstName} ${lastName}` : firstName,
+        farmerPhone: phoneNumber,
         imageUrl: imageOriginalName || '',
         imagePath: '',
         imageBase64: imageBase64 || null,
@@ -208,10 +266,7 @@ router.post('/save-plant',
         plantImage: plantImage || null,
         rank: rank || 'species',
         similarImages: Array.isArray(similarImages) ? similarImages : (similarImages ? JSON.parse(similarImages) : []),
-        location: {
-          latitude: 0,
-          longitude: 0
-        }
+        location: locationData
       };
 
       const savedPlant = await Plant.create(plantRecord);
