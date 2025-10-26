@@ -142,9 +142,16 @@ export function useChat({ chatId, isAdmin = false }: UseChatOptions) {
 
     // Always use polling for real-time updates
     useEffect(() => {
-        if (!chatId || isAdmin) return;
+        if (!chatId) return;
 
-        // Start polling immediately
+        // For admins, load messages once but don't poll
+        if (isAdmin) {
+            console.log('📋 Admin: Loading chat messages once');
+            loadMessages();
+            return;
+        }
+
+        // Start polling immediately for non-admins
         console.log('🔄 Starting polling for chat:', chatId);
         startPolling();
 

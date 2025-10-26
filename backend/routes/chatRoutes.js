@@ -6,14 +6,39 @@ const Plant = require('../models/Plant');
 const User = require('../models/User');
 const { authenticateUser, consumerOrFarmer, checkOwnership } = require('../middleware/authMiddleware');
 
+// Middleware to allow consumer, farmer, or admin access
+const allowParticipantOrAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      status: 'error',
+      message: 'Authentication required'
+    });
+  }
+
+  // Admin can always access
+  if (req.user.role === 'admin') {
+    return next();
+  }
+
+  // Consumers and farmers can access
+  if (['consumer', 'farmer'].includes(req.user.role)) {
+    return next();
+  }
+
+  return res.status(403).json({
+    status: 'error',
+    message: 'Insufficient permissions'
+  });
+};
+
 const router = express.Router();
 
 // @route   GET /api/chat/:chatId
 // @desc    Get chat messages
-// @access  Private (User/Farmer)
+// @access  Private (User/Farmer/Admin)
 router.get('/:chatId',
   authenticateUser,
-  consumerOrFarmer,
+  allowParticipantOrAdmin,
   async (req, res) => {
     try {
       const chat = await Chat.findById(req.params.chatId)
