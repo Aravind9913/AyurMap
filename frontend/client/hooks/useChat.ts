@@ -50,6 +50,40 @@ export function useChat({ chatId, isAdmin = false }: UseChatOptions) {
     const [isPolling, setIsPolling] = useState(false);
     const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+    // Load messages function
+    const loadMessages = useCallback(async () => {
+        if (!chatId) {
+            setMessages([]);
+            return;
+        }
+
+        try {
+            const token = await getToken({ template: 'ayurmap_backend' });
+            const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.CHAT_DETAILS}/${chatId}`;
+
+            console.log('📥 Loading messages for chat:', chatId);
+
+            const response = await apiCall(url, { method: 'GET' }, token);
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.status === 'success') {
+                    console.log('✅ Loaded messages:', data.data.messages?.length || 0);
+                    setMessages(data.data.messages || []);
+                }
+            }
+        } catch (error) {
+            console.error('Error loading messages:', error);
+        }
+    }, [chatId, getToken]);
+
+    // Load messages on mount
+    useEffect(() => {
+        if (chatId) {
+            loadMessages();
+        }
+    }, [chatId, loadMessages]);
+
     // Initialize Socket.io connection
     useEffect(() => {
         if (!chatId || isAdmin) return;
@@ -77,6 +111,7 @@ export function useChat({ chatId, isAdmin = false }: UseChatOptions) {
                     // Join the chat room
                     if (chatId) {
                         socketRef.current?.emit('join-chat', chatId);
+                        console.log(`📥 Joined chat room: ${chatId}`);
                     }
                 });
 
@@ -89,8 +124,14 @@ export function useChat({ chatId, isAdmin = false }: UseChatOptions) {
                 });
 
                 socketRef.current.on('receive-message', (data: any) => {
+                    console.log('📨 Received message via Socket.io:', data);
                     const newMessage: Message = data.message;
-                    setMessages((prev) => [...prev, newMessage]);
+                    setMessages((prev) => {
+                        // Prevent duplicates by checking if message already exists
+                        const exists = prev.some(m => m._id === newMessage._id);
+                        if (exists) return prev;
+                        return [...prev, newMessage];
+                    });
                 });
 
                 socketRef.current.on('typing-start', () => {
@@ -166,6 +207,8 @@ export function useChat({ chatId, isAdmin = false }: UseChatOptions) {
             const token = await getToken({ template: 'ayurmap_backend' });
             const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.CHAT_MESSAGES}/${chatId}/messages`;
 
+            console.log('📤 Sending message:', messageText);
+
             const response = await apiCall(
                 url,
                 {
@@ -180,22 +223,17 @@ export function useChat({ chatId, isAdmin = false }: UseChatOptions) {
 
             if (response.ok) {
                 const data = await response.json();
+                console.log('✅ Message sent successfully:', data);
 
-                // If Socket.io is connected, emit through it
-                if (socketRef.current && isConnected) {
-                    socketRef.current.emit('send-message', {
-                        chatId,
-                        message: data.data.message,
-                        sender: {
-                            id: data.data.message.senderId,
-                            name: data.data.message.senderName,
-                            role: data.data.message.senderRole,
-                        },
-                    });
-                }
-
-                // Add to local state
-                setMessages((prev) => [...prev, data.data.message]);
+                // Add message locally for immediate feedback
+                // Backend will emit via Socket.io to other participants
+                const newMessage = data.data.message;
+                setMessages((prev) => {
+                    // Prevent duplicates
+                    const exists = prev.some(m => m._id === newMessage._id);
+                    if (exists) return prev;
+                    return [...prev, newMessage];
+                });
             }
         } catch (error) {
             console.error('Error sending message:', error);
@@ -203,29 +241,6 @@ export function useChat({ chatId, isAdmin = false }: UseChatOptions) {
         }
     };
 
-    // Load messages
-    const loadMessages = async () => {
-        if (!chatId) {
-            setMessages([]);
-            return;
-        }
-
-        try {
-            const token = await getToken({ template: 'ayurmap_backend' });
-            const url = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.CHAT_DETAILS}/${chatId}`;
-
-            const response = await apiCall(url, { method: 'GET' }, token);
-
-            if (response.ok) {
-                const data = await response.json();
-                if (data.status === 'success') {
-                    setMessages(data.data.messages || []);
-                }
-            }
-        } catch (error) {
-            console.error('Error loading messages:', error);
-        }
-    };
 
     // Typing indicators
     const startTyping = () => {

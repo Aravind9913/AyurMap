@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth, useUser } from '@clerk/clerk-react';
 import { API_CONFIG, API_ENDPOINTS } from '@/lib/api';
 import { apiCall } from '@/lib/api';
 
@@ -50,6 +50,7 @@ interface ChatListProps {
 
 export default function ChatList({ onSelectChat, selectedChatId, role, showReportedOnly = false }: ChatListProps) {
     const { getToken } = useAuth();
+    const { user } = useUser();
     const [chats, setChats] = useState<Chat[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -102,7 +103,6 @@ export default function ChatList({ onSelectChat, selectedChatId, role, showRepor
         } else if (role === 'consumer') {
             return chat.farmerId;
         } else {
-            // Admin view - show both
             return chat.farmerId || chat.userId;
         }
     };
@@ -144,32 +144,32 @@ export default function ChatList({ onSelectChat, selectedChatId, role, showRepor
     if (loading) {
         return (
             <div className="flex items-center justify-center h-full">
-                <div className="text-gray-500">Loading chats...</div>
+                <div className="text-gray-400 text-sm">Loading...</div>
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col h-full">
-            {/* Search Bar */}
-            <div className="p-4 border-b border-gray-200">
+        <div className="flex flex-col h-full bg-white w-full">
+            {/* Simple Search Bar */}
+            <div className="p-3 border-b border-gray-100">
                 <input
                     type="text"
-                    placeholder="Search chats..."
+                    placeholder="Search..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 text-sm"
                 />
             </div>
 
             {/* Chat List */}
             <div className="flex-1 overflow-y-auto">
                 {filteredChats.length === 0 ? (
-                    <div className="p-8 text-center text-gray-500">
-                        {searchQuery ? 'No chats found' : 'No chats yet'}
+                    <div className="flex flex-col items-center justify-center h-full p-6">
+                        <p className="text-gray-400 text-sm">{searchQuery ? 'No chats found' : 'No conversations yet'}</p>
                     </div>
                 ) : (
-                    <div className="divide-y divide-gray-200">
+                    <div className="divide-y divide-gray-100">
                         {filteredChats.map((chat) => {
                             const other = getOtherParticipant(chat);
                             const unreadCount = getUnreadCount(chat);
@@ -180,55 +180,46 @@ export default function ChatList({ onSelectChat, selectedChatId, role, showRepor
                                 <div
                                     key={chat._id}
                                     onClick={() => onSelectChat(chat)}
-                                    className={`p-4 cursor-pointer hover:bg-gray-50 transition ${isSelected ? 'bg-emerald-50 border-l-4 border-emerald-600' : ''
+                                    className={`cursor-pointer transition-colors ${isSelected ? 'bg-emerald-50' : 'hover:bg-gray-50'
                                         } ${isReported ? 'bg-red-50' : ''}`}
                                 >
-                                    <div className="flex items-start gap-3">
-                                        {/* Avatar */}
-                                        <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                                            {other?.firstName ? (
-                                                <span className="text-emerald-700 font-semibold">
-                                                    {other.firstName[0]}{other.lastName[0]}
-                                                </span>
-                                            ) : (
-                                                <span className="text-emerald-700">👤</span>
-                                            )}
-                                        </div>
+                                    <div className="px-4 py-3">
+                                        <div className="flex items-center gap-3">
+                                            {/* Avatar */}
+                                            <div className="flex-shrink-0">
+                                                <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden">
+                                                    <img
+                                                        src={(other as any)?.profileImage || `https://ui-avatars.com/api/?name=${other?.firstName}+${other?.lastName}&background=10b981&color=fff`}
+                                                        alt={`${other?.firstName} ${other?.lastName}`}
+                                                        className="w-full h-full object-cover"
+                                                        onError={(e) => {
+                                                            e.currentTarget.src = `https://ui-avatars.com/api/?name=${other?.firstName}+${other?.lastName}&background=10b981&color=fff`;
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
 
-                                        {/* Chat Info */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center justify-between mb-1">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-semibold text-gray-900 truncate">
+                                            {/* Chat Info */}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <span className="font-medium text-gray-900 truncate text-sm">
                                                         {other?.firstName} {other?.lastName}
                                                     </span>
-                                                    {isReported && (
-                                                        <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">
-                                                            Reported
+                                                    <span className="text-xs text-gray-400 flex-shrink-0">
+                                                        {formatTime(chat.lastMessageAt)}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <p className="text-sm text-gray-500 truncate">
+                                                        {getLastMessage(chat)}
+                                                    </p>
+                                                    {unreadCount > 0 && (
+                                                        <span className="bg-emerald-500 text-white text-xs font-medium rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1.5">
+                                                            {unreadCount}
                                                         </span>
                                                     )}
                                                 </div>
-                                                <span className="text-xs text-gray-500 flex-shrink-0">
-                                                    {formatTime(chat.lastMessageAt)}
-                                                </span>
                                             </div>
-
-                                            <div className="flex items-center justify-between">
-                                                <p className="text-sm text-gray-600 truncate">
-                                                    {getLastMessage(chat)}
-                                                </p>
-                                                {unreadCount > 0 && (
-                                                    <span className="bg-emerald-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 ml-2">
-                                                        {unreadCount}
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            {role === 'admin' && chat.plantId && (
-                                                <p className="text-xs text-gray-500 mt-1 truncate">
-                                                    Plant: {chat.plantName}
-                                                </p>
-                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -240,4 +231,3 @@ export default function ChatList({ onSelectChat, selectedChatId, role, showRepor
         </div>
     );
 }
-
