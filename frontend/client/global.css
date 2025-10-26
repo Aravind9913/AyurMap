@@ -7,6 +7,7 @@
 @tailwind utilities;
 
 @layer base {
+
   /**
    * Tailwind CSS theme
    * tailwind.config.ts expects the following color variables to be expressed as HSL values.
@@ -118,4 +119,31 @@
     overflow-x: auto;
     white-space: pre;
   }
+}
+
+/* Custom Leaflet popup and tooltip styles */
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.leaflet-popup-content {
+  margin: 16px !important;
+}
+
+.custom-tooltip {
+  background: rgba(16, 185, 129, 0.98) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 10px !important;
+  padding: 12px 14px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2) !important;
+  max-width: 250px !important;
+  font-family: system-ui, -apple-system, sans-serif !important;
+  line-height: 1.4 !important;
+}
+
+.custom-tooltip::before {
+  border-top-color: rgba(16, 185, 129, 0.95) !important;
 }

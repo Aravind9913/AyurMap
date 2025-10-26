@@ -1223,7 +1223,7 @@ function PlantMapView({ myPlants, loadingPlants, setSelectedPlant }: any) {
     };
   }, []);
 
-  // Add markers to map
+  // Add markers to map with clustering support
   useEffect(() => {
     if (!mapReady || !mapInstanceRef.current) return;
 
@@ -1233,52 +1233,194 @@ function PlantMapView({ myPlants, loadingPlants, setSelectedPlant }: any) {
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
 
-    // Add new markers
+    // Group plants by location (with tolerance for same location)
+    const locationGroups = new Map<string, any[]>();
+
     processedPlants.forEach((plant) => {
-      const borderColor = plant.locationType === 'gps' ? '#10b981' : '#3b82f6';
+      // Round to 4 decimal places (~11 meters precision)
+      const lat = Math.round(plant.displayLat * 10000) / 10000;
+      const lng = Math.round(plant.displayLng * 10000) / 10000;
+      const key = `${lat},${lng}`;
 
-      let imageSrc = '/placeholder.svg';
-      if (plant.imageBase64) {
-        imageSrc = `data:${plant.imageContentType || 'image/jpeg'};base64,${plant.imageBase64}`;
+      if (!locationGroups.has(key)) {
+        locationGroups.set(key, []);
       }
-
-      const icon = L.divIcon({
-        html: `<div style="border: 3px solid ${borderColor}; border-radius: 50%; padding: 2px; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
-          <div style="width: 36px; height: 36px; border-radius: 50%; overflow: hidden; background: #e5e7eb;">
-            <img src="${imageSrc}" alt="${plant.naturalName}" style="width: 100%; height: 100%; object-fit: cover;" />
-          </div>
-        </div>`,
-        className: "custom-plant-marker",
-        iconSize: [44, 44]
-      });
-
-      const marker = L.marker([plant.displayLat, plant.displayLng], { icon }).addTo(map);
-
-      marker.bindPopup(`
-        <div style="max-width: 220px; font-family: system-ui;">
-          <div style="font-weight: bold; color: #065f46; font-size: 14px; margin-bottom: 4px;">
-            ${plant.naturalName || plant.naturalName}
-          </div>
-          <div style="font-style: italic; color: #047857; font-size: 12px; margin-bottom: 8px;">
-            ${plant.scientificName || ''}
-          </div>
-          <div style="padding: 4px 8px; background: ${plant.locationType === 'gps' ? '#d1fae5' : '#dbeafe'}; border-radius: 4px; font-size: 11px; color: #065f46;">
-            ${plant.locationType === 'gps' ? '📍 GPS Location' : '📌 Approximate Location'}
-          </div>
-          ${plant.location?.city ? `
-            <div style="margin-top: 8px; font-size: 11px; color: #6b7280;">
-              ${plant.location.city}${plant.location.state ? ', ' + plant.location.state : ''}, ${plant.location.country}
-            </div>
-          ` : ''}
-        </div>
-      `);
-
-      marker.on('click', () => {
-        setSelectedPlant(plant);
-      });
-
-      markersRef.current.push(marker);
+      locationGroups.get(key)!.push(plant);
     });
+
+    // Add markers with clustering for same-location plants
+    locationGroups.forEach((plantsAtLocation, locationKey) => {
+      const isMultipleAtLocation = plantsAtLocation.length > 1;
+
+      plantsAtLocation.forEach((plant, index) => {
+        const borderColor = plant.locationType === 'gps' ? '#10b981' : '#3b82f6';
+
+        let imageSrc = '/placeholder.svg';
+        if (plant.imageBase64) {
+          imageSrc = `data:${plant.imageContentType || 'image/jpeg'};base64,${plant.imageBase64}`;
+        }
+
+        // Add small offset for plants at the same location to prevent complete overlap
+        const [baseLat, baseLng] = locationKey.split(',').map(Number);
+        const offsetLat = index * 0.0001; // Small offset (~11 meters per 0.0001 degree)
+        const offsetLng = index * 0.0001;
+        const markerLat = baseLat + offsetLat;
+        const markerLng = baseLng + offsetLng;
+
+        // Create icon with cluster badge for multiple plants
+        const clusterBadge = isMultipleAtLocation ? `
+          <div style="position: absolute; top: -6px; right: -6px; background: #10b981; color: white; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border: 2px solid white; z-index: 10;">
+            ${plantsAtLocation.length}
+          </div>
+        ` : '';
+
+        const icon = L.divIcon({
+          html: `
+            <div style="position: relative; border: 3px solid ${borderColor}; border-radius: 50%; padding: 2px; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+              <div style="width: 36px; height: 36px; border-radius: 50%; overflow: hidden; background: #e5e7eb;">
+                <img src="${imageSrc}" alt="${plant.naturalName}" style="width: 100%; height: 100%; object-fit: cover;" />
+              </div>
+              ${clusterBadge}
+            </div>
+          `,
+          className: "custom-plant-marker",
+          iconSize: [44, 44]
+        });
+
+        const marker = L.marker([markerLat, markerLng], { icon }).addTo(map);
+
+        // Create popup with plant selection for clusters
+        let popupContent = '';
+
+        if (isMultipleAtLocation) {
+          // Cluster popup - show all plants with clickable selection
+          popupContent = `
+            <div style="max-width: 280px; font-family: system-ui;">
+              <div style="font-weight: bold; color: #065f46; font-size: 13px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid #d1fae5;">
+                🌿 ${plantsAtLocation.length} Plants at this location
+              </div>
+              <div style="max-height: 350px; overflow-y: auto; padding-right: 4px;">
+                ${plantsAtLocation.map((p, idx) => `
+                  <div 
+                    onclick="window.selectPlantFromCluster('${p._id}', '${plant.naturalName}', '${p.scientificName || ''}')"
+                    style="padding: 10px; margin-bottom: 6px; border-left: 4px solid ${idx === index ? borderColor : '#cbd5e1'}; 
+                           background: ${idx === index ? '#f0fdf4' : '#fafafa'}; 
+                           border-radius: 6px; cursor: pointer; transition: all 0.2s;"
+                    onmouseover="this.style.background='#f0fdf4'; this.style.borderLeftColor='#10b981'"
+                    onmouseout="this.style.background='${idx === index ? '#f0fdf4' : '#fafafa'}'; this.style.borderLeftColor='${idx === index ? borderColor : '#cbd5e1'}'"
+                  >
+                    <div style="font-weight: bold; color: #065f46; font-size: 13px; margin-bottom: 2px;">
+                      ${p.naturalName}
+                    </div>
+                    <div style="font-style: italic; color: #047857; font-size: 11px; margin-bottom: 4px;">
+                      ${p.scientificName || 'Scientific name not available'}
+                    </div>
+                    ${p.location?.city ? `
+                      <div style="font-size: 10px; color: #6b7280;">
+                        📍 ${p.location.city}${p.location.state ? ', ' + p.location.state : ''}
+                      </div>
+                    ` : ''}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        } else {
+          // Single plant popup
+          popupContent = `
+            <div style="max-width: 220px; font-family: system-ui;">
+              <div style="font-weight: bold; color: #065f46; font-size: 14px; margin-bottom: 4px;">
+                ${plant.naturalName || plant.naturalName}
+              </div>
+              <div style="font-style: italic; color: #047857; font-size: 12px; margin-bottom: 8px;">
+                ${plant.scientificName || ''}
+              </div>
+              <div style="padding: 4px 8px; background: ${plant.locationType === 'gps' ? '#d1fae5' : '#dbeafe'}; border-radius: 4px; font-size: 11px; color: #065f46;">
+                ${plant.locationType === 'gps' ? '📍 GPS Location' : '📌 Approximate Location'}
+              </div>
+              ${plant.location?.city ? `
+                <div style="margin-top: 8px; font-size: 11px; color: #6b7280;">
+                  ${plant.location.city}${plant.location.state ? ', ' + plant.location.state : ''}, ${plant.location.country}
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }
+
+        // Bind popup to marker but control when it opens
+        marker.bindPopup(popupContent, {
+          closeButton: true,
+          autoPan: true,
+          className: 'custom-popup',
+          closeOnClick: true
+        });
+
+        // Open popup on hover (with delay to prevent flickering)
+        let hoverTimeout: NodeJS.Timeout;
+        let popupTimeout: NodeJS.Timeout;
+
+        marker.on('mouseover', () => {
+          clearTimeout(hoverTimeout);
+          clearTimeout(popupTimeout);
+
+          hoverTimeout = setTimeout(() => {
+            marker.closeTooltip(); // Hide tooltip when opening popup
+            marker.openPopup();
+          }, 300); // Small delay to prevent accidental opens
+        });
+
+        marker.on('mouseout', () => {
+          clearTimeout(hoverTimeout);
+
+          // Delay closing to allow user to move to popup
+          popupTimeout = setTimeout(() => {
+            // Only close if popup doesn't have focus
+            const popup = map.getPane('popupPane');
+            if (popup && !popup.querySelector(':hover')) {
+              marker.closePopup();
+            }
+          }, 300);
+        });
+
+        // Keep popup open when hovering over it
+        marker.on('add', () => {
+          marker.addEventListener('popupopen', () => {
+            const popupElement = marker.getPopup()?.getElement();
+            if (popupElement) {
+              popupElement.addEventListener('mouseenter', () => {
+                clearTimeout(popupTimeout);
+              });
+              popupElement.addEventListener('mouseleave', () => {
+                popupTimeout = setTimeout(() => {
+                  marker.closePopup();
+                }, 300);
+              });
+            }
+          });
+        });
+
+        // Handle marker click - open detail modal
+        marker.on('click', () => {
+          // Close popup if open
+          marker.closePopup();
+          // Open the plant detail modal
+          setSelectedPlant(plant);
+        });
+
+        markersRef.current.push(marker);
+      });
+    });
+
+    // Store cluster selection function globally
+    (window as any).selectPlantFromCluster = (plantId: string, naturalName: string, scientificName: string) => {
+      // Find the plant by ID
+      const selectedPlant = processedPlants.find(p => p._id === plantId);
+      if (selectedPlant) {
+        setSelectedPlant(selectedPlant);
+      }
+      // Close popup
+      map.closePopup();
+    };
 
     // Fit bounds
     if (markersRef.current.length > 0) {
@@ -1289,6 +1431,11 @@ function PlantMapView({ myPlants, loadingPlants, setSelectedPlant }: any) {
     setTimeout(() => {
       map.invalidateSize();
     }, 100);
+
+    // Cleanup
+    return () => {
+      delete (window as any).selectPlantFromCluster;
+    };
   }, [processedPlants, setSelectedPlant, mapReady]);
 
   const gpsPlants = processedPlants.filter(p => p.locationType === 'gps').length;
