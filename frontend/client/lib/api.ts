@@ -142,3 +142,171 @@ export async function deletePlant(plantId: string, token: string) {
 
   return response.json();
 }
+
+// Admin API functions
+export async function fetchDashboardStats(token: string) {
+  const url = `${API_CONFIG.BASE_URL}/api/admin/dashboard`;
+  const response = await apiCall(url, {}, token);
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch dashboard stats');
+  }
+
+  return response.json();
+}
+
+export async function fetchUsers(token: string, page = 1, limit = 20, filters: Record<string, string> = {}) {
+  const params = { page: String(page), limit: String(limit), ...filters };
+  const url = buildApiUrl('/api/admin/users', params);
+  const response = await apiCall(url, {}, token);
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch users');
+  }
+
+  return response.json();
+}
+
+export async function fetchPlants(token: string, page = 1, limit = 20, filters: Record<string, string> = {}) {
+  const params = { page: String(page), limit: String(limit), ...filters };
+  const url = buildApiUrl('/api/admin/plants', params);
+  const response = await apiCall(url, {}, token);
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch plants');
+  }
+
+  return response.json();
+}
+
+export async function fetchChats(token: string, page = 1, limit = 20, filters: Record<string, string> = {}) {
+  const params = { page: String(page), limit: String(limit), ...filters };
+  const url = buildApiUrl('/api/admin/chats', params);
+  const response = await apiCall(url, {}, token);
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch chats');
+  }
+
+  return response.json();
+}
+
+export async function getUserActivity(userId: string, token: string) {
+  const url = `${API_CONFIG.BASE_URL}/api/admin/users/${userId}/activity`;
+  const response = await apiCall(url, {}, token);
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch user activity');
+  }
+
+  return response.json();
+}
+
+export async function blockUser(userId: string, isBlocked: boolean, reason: string, token: string) {
+  const url = `${API_CONFIG.BASE_URL}/api/admin/users/${userId}/block`;
+  const response = await apiCall(url, {
+    method: 'PUT',
+    body: JSON.stringify({ isBlocked, blockReason: reason }),
+  }, token);
+
+  if (!response.ok) {
+    throw new Error('Failed to block user');
+  }
+
+  return response.json();
+}
+
+export async function suspendUser(userId: string, suspendedUntil: string, reason: string, token: string) {
+  const url = `${API_CONFIG.BASE_URL}/api/admin/users/${userId}/suspend`;
+  const response = await apiCall(url, {
+    method: 'PUT',
+    body: JSON.stringify({ suspendedUntil, blockReason: reason }),
+  }, token);
+
+  if (!response.ok) {
+    throw new Error('Failed to suspend user');
+  }
+
+  return response.json();
+}
+
+export async function deleteUser(userId: string, token: string) {
+  const url = `${API_CONFIG.BASE_URL}/api/admin/users/${userId}`;
+  const response = await apiCall(url, {
+    method: 'DELETE',
+  }, token);
+
+  if (!response.ok) {
+    throw new Error('Failed to delete user');
+  }
+
+  return response.json();
+}
+
+export async function updateUserRole(userId: string, role: string, token: string) {
+  const url = `${API_CONFIG.BASE_URL}/api/admin/users/${userId}/role`;
+  const response = await apiCall(url, {
+    method: 'PUT',
+    body: JSON.stringify({ role }),
+  }, token);
+
+  if (!response.ok) {
+    throw new Error('Failed to update user role');
+  }
+
+  return response.json();
+}
+
+export async function deletePlantByAdmin(plantId: string, token: string) {
+  const url = `${API_CONFIG.BASE_URL}/api/admin/plants/${plantId}`;
+  const response = await apiCall(url, {
+    method: 'DELETE',
+  }, token);
+
+  if (!response.ok) {
+    throw new Error('Failed to delete plant');
+  }
+
+  return response.json();
+}
+
+export async function verifyPlant(plantId: string, isVerified: boolean, notes: string, token: string) {
+  const url = `${API_CONFIG.BASE_URL}/api/admin/plants/${plantId}/verify`;
+  const response = await apiCall(url, {
+    method: 'PUT',
+    body: JSON.stringify({ isVerified, notes }),
+  }, token);
+
+  if (!response.ok) {
+    throw new Error('Failed to verify plant');
+  }
+
+  return response.json();
+}
+
+export async function deleteChat(chatId: string, token: string) {
+  const url = `${API_CONFIG.BASE_URL}/api/admin/chats/${chatId}`;
+  const response = await apiCall(url, {
+    method: 'DELETE',
+  }, token);
+
+  if (!response.ok) {
+    throw new Error('Failed to delete chat');
+  }
+
+  return response.json();
+}
+
+export async function resolveReportedChat(chatId: string, notes: string, token: string) {
+  const url = `${API_CONFIG.BASE_URL}/api/admin/chats/${chatId}/resolve-report`;
+  const response = await apiCall(url, {
+    method: 'PUT',
+    body: JSON.stringify({ adminNotes: notes }),
+  }, token);
+
+  if (!response.ok) {
+    throw new Error('Failed to resolve chat report');
+  }
+
+  return response.json();
+}
