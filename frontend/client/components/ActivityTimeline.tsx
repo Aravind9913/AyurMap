@@ -14,13 +14,13 @@ export function ActivityTimeline({ events }: ActivityTimelineProps) {
     const getTypeStyles = (type?: string) => {
         switch (type) {
             case "success":
-                return "bg-green-100 border-green-500";
+                return "bg-success/20 border-success";
             case "warning":
                 return "bg-yellow-100 border-yellow-500";
             case "destructive":
-                return "bg-red-100 border-red-500";
+                return "bg-destructive/20 border-destructive";
             default:
-                return "bg-blue-100 border-blue-500";
+                return "bg-primary/20 border-primary";
         }
     };
 

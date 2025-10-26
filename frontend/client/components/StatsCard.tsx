@@ -8,7 +8,7 @@ interface StatsCardProps {
 export function StatsCard({ title, value, subtitle, variant = "default" }: StatsCardProps) {
     const variantStyles = {
         default: "text-foreground",
-        success: "text-green-600",
+        success: "text-success",
         warning: "text-yellow-600",
         destructive: "text-destructive",
     };
