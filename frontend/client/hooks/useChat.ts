@@ -48,7 +48,7 @@ export function useChat({ chatId, isAdmin = false }: UseChatOptions) {
     const [isConnected, setIsConnected] = useState(false);
     const [isTyping, setIsTyping] = useState(false);
     const [isPolling, setIsPolling] = useState(false);
-    const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     // Load messages function
     const loadMessages = useCallback(async () => {
@@ -77,101 +77,13 @@ export function useChat({ chatId, isAdmin = false }: UseChatOptions) {
         }
     }, [chatId, getToken]);
 
-    // Load messages on mount
-    useEffect(() => {
-        if (chatId) {
-            loadMessages();
-        }
-    }, [chatId, loadMessages]);
-
-    // Initialize Socket.io connection
-    useEffect(() => {
-        if (!chatId || isAdmin) return;
-
-        const initSocket = async () => {
-            try {
-                const token = await getToken({ template: 'ayurmap_backend' });
-
-                socketRef.current = io(API_CONFIG.BASE_URL, {
-                    auth: { token },
-                    transports: ['websocket', 'polling'],
-                });
-
-                socketRef.current.on('connect', () => {
-                    console.log('✅ Socket.io connected');
-                    setIsConnected(true);
-                    setIsPolling(false);
-
-                    // Clear any polling
-                    if (pollingIntervalRef.current) {
-                        clearInterval(pollingIntervalRef.current);
-                        pollingIntervalRef.current = null;
-                    }
-
-                    // Join the chat room
-                    if (chatId) {
-                        socketRef.current?.emit('join-chat', chatId);
-                        console.log(`📥 Joined chat room: ${chatId}`);
-                    }
-                });
-
-                socketRef.current.on('disconnect', () => {
-                    console.log('❌ Socket.io disconnected');
-                    setIsConnected(false);
-
-                    // Fallback to polling
-                    startPolling();
-                });
-
-                socketRef.current.on('receive-message', (data: any) => {
-                    console.log('📨 Received message via Socket.io:', data);
-                    const newMessage: Message = data.message;
-                    setMessages((prev) => {
-                        // Prevent duplicates by checking if message already exists
-                        const exists = prev.some(m => m._id === newMessage._id);
-                        if (exists) return prev;
-                        return [...prev, newMessage];
-                    });
-                });
-
-                socketRef.current.on('typing-start', () => {
-                    setIsTyping(true);
-                });
-
-                socketRef.current.on('typing-stop', () => {
-                    setIsTyping(false);
-                });
-
-                // Handle connection errors
-                socketRef.current.on('connect_error', (error) => {
-                    console.error('Socket.io connection error:', error);
-                    setIsConnected(false);
-                    startPolling(); // Fallback to polling on connection error
-                });
-            } catch (error) {
-                console.error('Socket.io initialization error:', error);
-                startPolling(); // Start polling if socket initialization fails
-            }
-        };
-
-        initSocket();
-
-        return () => {
-            if (socketRef.current) {
-                socketRef.current.disconnect();
-                socketRef.current = null;
-            }
-            if (pollingIntervalRef.current) {
-                clearInterval(pollingIntervalRef.current);
-            }
-        };
-    }, [chatId, isAdmin, getToken]);
-
-    // Polling fallback
+    // Polling for real-time updates
     const startPolling = useCallback(() => {
-        if (pollingIntervalRef.current || !chatId) return;
+        if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+        }
 
-        console.log('🔄 Starting polling fallback');
+        console.log('🔄 Starting polling for chat:', chatId);
         setIsPolling(true);
 
         const fetchMessages = async () => {
@@ -184,7 +96,9 @@ export function useChat({ chatId, isAdmin = false }: UseChatOptions) {
                 if (response.ok) {
                     const data = await response.json();
                     if (data.status === 'success') {
-                        setMessages(data.data.messages || []);
+                        const newMessages = data.data.messages || [];
+                        // Always update to get latest messages
+                        setMessages(newMessages);
                     }
                 }
             } catch (error) {
@@ -195,9 +109,32 @@ export function useChat({ chatId, isAdmin = false }: UseChatOptions) {
         // Initial fetch
         fetchMessages();
 
-        // Set up interval
-        pollingIntervalRef.current = setInterval(fetchMessages, 3000);
+        // Set up interval - check every 2 seconds
+        pollingIntervalRef.current = setInterval(fetchMessages, 2000);
     }, [chatId, getToken]);
+
+    // Load messages on mount
+    useEffect(() => {
+        if (chatId) {
+            loadMessages();
+        }
+    }, [chatId, loadMessages]);
+
+    // Always use polling for real-time updates
+    useEffect(() => {
+        if (!chatId || isAdmin) return;
+
+        // Start polling immediately
+        console.log('🔄 Starting polling for chat:', chatId);
+        startPolling();
+
+        return () => {
+            if (pollingIntervalRef.current) {
+                clearInterval(pollingIntervalRef.current);
+                pollingIntervalRef.current = null;
+            }
+        };
+    }, [chatId, isAdmin, startPolling]);
 
     // Send message
     const sendMessage = async (messageText: string) => {
